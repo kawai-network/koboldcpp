@@ -340,17 +340,29 @@ func TestGeneration(t *testing.T) {
 
 	// Load Model
 	loadInputs := &LoadModelInputs{
-		Threads:          4,
-		BlasThreads:      4,
-		MaxContextLength: 512,
-		ModelFilename:    CString(absModelPath),
-		ExecutablePath:   CString(absLibPath),
-		UseMmap:          true,
-		GPULayers:        0, // CPU only for test
-		Quiet:            true,
+		Threads:            4,
+		BlasThreads:        4,
+		MaxContextLength:   512,
+		ModelFilename:      CString(absModelPath),
+		ExecutablePath:     CString(absLibPath),
+		UseMmap:            true,
+		GPULayers:          0, // CPU only for test
+		Quiet:              true,
+		LoraFilename:       CString(""),
+		DraftModelFilename: CString(""),
+		MMProjFilename:     CString(""),
+		VulkanInfo:         CString(""),
+		OverrideTensors:    CString(""),
+		DevicesOverride:    CString(""),
 	}
 	defer FreeCString(loadInputs.ModelFilename)
 	defer FreeCString(loadInputs.ExecutablePath)
+	defer FreeCString(loadInputs.LoraFilename)
+	defer FreeCString(loadInputs.DraftModelFilename)
+	defer FreeCString(loadInputs.MMProjFilename)
+	defer FreeCString(loadInputs.VulkanInfo)
+	defer FreeCString(loadInputs.OverrideTensors)
+	defer FreeCString(loadInputs.DevicesOverride)
 
 	t.Log("Loading model...")
 	success := LoadModel(loadInputs)
