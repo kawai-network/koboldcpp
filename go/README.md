@@ -240,6 +240,53 @@ go test -bench=. -benchmem
 go test -v -run Integration
 ```
 
+## CI/CD Workflows
+
+Project ini memiliki GitHub Actions workflows untuk automated testing:
+
+### macOS Workflow
+- **File**: `.github/workflows/test-go-bindings-macos.yaml`
+- **Triggers**: 
+  - Push/PR ke `go/**`
+  - Manual dispatch
+- **Features**:
+  - ✅ Build KoboldCpp library dengan Metal support
+  - ✅ Run Go tests dengan race detector
+  - ✅ Run benchmarks
+  - ✅ Code quality checks (vet, fmt)
+  - ✅ Upload library artifacts
+- **Platform**: macOS 14 (ARM64)
+
+### Linux Workflow
+- **File**: `.github/workflows/test-go-bindings-linux.yaml`
+- **Triggers**:
+  - Push/PR ke `go/**`
+  - Manual dispatch
+- **Features**:
+  - ✅ Build KoboldCpp library (CPU)
+  - ✅ Run Go tests dengan race detector
+  - ✅ Generate coverage reports
+  - ✅ Code quality checks (vet, fmt)
+  - ✅ Upload library dan coverage artifacts
+- **Platform**: Ubuntu 22.04 (x64)
+
+### Running Workflows Manually
+
+1. Go to **Actions** tab di GitHub
+2. Select **Test Go Bindings (macOS)** atau **Test Go Bindings (Linux)**
+3. Click **Run workflow**
+4. Optionally specify commit hash untuk build dari commit tertentu
+
+### Workflow Artifacts
+
+Setiap workflow run menghasilkan artifacts:
+- **koboldcpp-libs-macos-arm64**: Library files untuk macOS
+- **koboldcpp-libs-linux-x64**: Library files untuk Linux
+- **go-coverage-report**: Coverage report (HTML + raw data)
+- **go-test-results**: Test output files
+
+Artifacts tersimpan selama 7 hari dan bisa didownload dari workflow run page.
+
 ## Library Selection
 
 Library akan dipilih otomatis berdasarkan parameter:

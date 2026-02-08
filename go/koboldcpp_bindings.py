@@ -15,11 +15,13 @@ It includes all necessary structures and function bindings for:
 - Text embeddings
 - State management (KV cache)
 - Performance monitoring
+
+Note: This module contains ONLY the C++ library bindings. Application-level features
+from koboldcpp.py (such as MCP protocol support, web server, etc.) are not included.
 """
 
 import ctypes
 import os
-import sys
 import time
 
 # ============================================================================
@@ -360,105 +362,23 @@ class embeddings_generation_outputs(ctypes.Structure):
                 ("data", ctypes.c_char_p)]
 
 # ============================================================================
-# HELPER CLASSES
-# ============================================================================
-
-class StdoutRedirector:
-    """Helper class to redirect stdout to both terminal and a writer"""
-    def __init__(self, writer):
-        self.writer = writer
-        self.terminal = sys.__stdout__
-    
-    def write(self, message):
-        try:
-            # Always write to terminal, then duplicate to pipe writer
-            self.terminal.write(message)
-            self.terminal.flush()
-            if self.writer:
-                try:
-                    self.writer.write(message)
-                    self.writer.flush()
-                except Exception:
-                    self.writer = None
-        except Exception:
-            pass
-    
-    def flush(self):
-        self.terminal.flush()
-
-
-class MCPStdioClient:
-    """Helper class for MCP (Model Context Protocol) stdio client communication"""
-    def resolve_command(self, command):
-        import shutil
-        resolved = shutil.which(command)
-        if resolved:
-            return resolved
-        return command  # fallback
-
-    def __init__(self, command, largs, env=None, cwd=None):
-        import subprocess
-        import threading
-        
-        if isinstance(command, str):
-            command = self.resolve_command(command)
-            cmd = [command]
-        else:
-            cmd = list(command)
-        if largs:
-            cmd.extend(largs)
-        full_env = os.environ.copy()
-        if env:
-            full_env.update(env)
-        self.process = subprocess.Popen(
-            cmd,
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            bufsize=1,
-            env=full_env,
-            cwd=cwd
-        )
-        self.lock = threading.Lock()
-        self.stderr_buffer = []
-        self.stderr_limit = 20
-        self.alive = True
-        self.stderr_thread = threading.Thread(
-            target=self._read_stderr,
-            daemon=True
-        )
-        self.stderr_thread.start()
-    
-    def _read_stderr(self):
-        try:
-            for line in self.process.stderr:
-                if not line:
-                    break
-                line = line.rstrip()
-                self.stderr_buffer.append(line)
-                if len(self.stderr_buffer) > self.stderr_limit:
-                    self.stderr_buffer.pop(0)
-        finally:
-            self.alive = False
-
-# ============================================================================
 # LIBRARY INITIALIZATION AND FUNCTION BINDINGS
 # ============================================================================
 
 # Library file names (platform-specific)
-def pick_existant_file(ntoption, nonntoption, precompiled_prefix=""):
+def pick_existant_file(ntoption, nonntoption):
     """
     Helper function to pick the correct library file based on platform
     
     Args:
         ntoption: Windows library name (.dll)
         nonntoption: Unix library name (.so)
-        precompiled_prefix: Optional prefix for precompiled libraries
         
     Returns:
         The appropriate library filename for the current platform
     """
+    precompiled_prefix = "precompiled_"
+    
     def file_exists(filename):
         return os.path.exists(filename)
     

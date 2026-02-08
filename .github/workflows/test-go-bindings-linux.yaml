@@ -1,0 +1,205 @@
+name: Test Go Bindings (Linux)
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit_hash:
+        description: 'Optional commit hash to build from'
+        required: false
+        default: ''
+  push:
+    paths:
+      - 'go/**'
+      - '.github/workflows/test-go-bindings-linux.yaml'
+  pull_request:
+    paths:
+      - 'go/**'
+      - '.github/workflows/test-go-bindings-linux.yaml'
+
+env:
+  BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Clone Repository
+        id: checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.commit_hash != '' && inputs.commit_hash || github.head_ref || github.ref_name }}
+
+      - name: Show Commit Used
+        run: |
+          echo "Building from ref: ${{ inputs.commit_hash != '' && inputs.commit_hash || github.head_ref || github.ref_name }}"
+          echo "Commit SHA: $(git rev-parse HEAD)"
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+          cache: true
+          cache-dependency-path: go/go.sum
+
+      - name: Install Dependencies
+        id: depends
+        run: |
+          # Install build dependencies
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake
+          
+          # Verify Go installation
+          go version
+          
+          # Show system info
+          echo "=== System Info ==="
+          uname -a
+          lscpu | grep "Model name"
+          nproc
+
+      - name: Build KoboldCpp Libraries
+        id: build_libs
+        run: |
+          echo "=== Building KoboldCpp Libraries ==="
+          
+          # Build default library (CPU-only for Linux)
+          make LLAMA_PORTABLE=1
+          
+          # List built libraries
+          echo "=== Built Libraries ==="
+          ls -lh *.so 2>/dev/null || echo "No .so files found"
+
+      - name: Verify Library Files
+        id: verify_libs
+        run: |
+          echo "=== Verifying Library Files ==="
+          
+          # Check for required library
+          if [ -f "koboldcpp_default.so" ]; then
+            echo "✅ koboldcpp_default.so found"
+            file koboldcpp_default.so
+            ldd koboldcpp_default.so || true
+          else
+            echo "❌ koboldcpp_default.so NOT found"
+            exit 1
+          fi
+
+      - name: Install Go Dependencies
+        id: go_deps
+        working-directory: ./go
+        run: |
+          echo "=== Installing Go Dependencies ==="
+          go mod download
+          go mod verify
+          
+          echo "=== Go Module Info ==="
+          go list -m all
+
+      - name: Build Go Package
+        id: go_build
+        working-directory: ./go
+        run: |
+          echo "=== Building Go Package ==="
+          go build -v ./...
+          
+          echo "=== Build Complete ==="
+
+      - name: Run Go Tests
+        id: go_test
+        working-directory: ./go
+        run: |
+          echo "=== Running Go Tests ==="
+          
+          # Run tests with verbose output and race detector
+          go test -v -race -timeout 10m ./...
+          
+          echo "=== Tests Complete ==="
+
+      - name: Run Go Benchmarks (Optional)
+        id: go_bench
+        working-directory: ./go
+        continue-on-error: true
+        run: |
+          echo "=== Running Go Benchmarks ==="
+          go test -bench=. -benchmem ./...
+
+      - name: Check Go Code Quality
+        id: go_quality
+        working-directory: ./go
+        run: |
+          echo "=== Running go vet ==="
+          go vet ./...
+          
+          echo "=== Running go fmt check ==="
+          if [ -n "$(gofmt -l .)" ]; then
+            echo "❌ Code is not formatted. Run 'go fmt ./...'"
+            gofmt -l .
+            exit 1
+          else
+            echo "✅ Code is properly formatted"
+          fi
+
+      - name: Generate Coverage Report
+        id: coverage
+        working-directory: ./go
+        run: |
+          echo "=== Generating Coverage Report ==="
+          go test -coverprofile=coverage.out -covermode=atomic ./...
+          go tool cover -func=coverage.out
+          
+          # Generate HTML coverage report
+          go tool cover -html=coverage.out -o coverage.html
+
+      - name: Upload Library Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: koboldcpp-libs-linux-x64
+          path: |
+            koboldcpp_default.so
+          retention-days: 7
+
+      - name: Upload Coverage Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: go-coverage-report
+          path: |
+            go/coverage.out
+            go/coverage.html
+          retention-days: 7
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: go-test-results-linux
+          path: |
+            go/*.test
+            go/*.out
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch**: ${{ env.BRANCH_NAME }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: $(git rev-parse --short HEAD)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Go Version**: $(go version)" >> $GITHUB_STEP_SUMMARY
+          echo "- **OS**: Ubuntu 22.04 x64" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ -f "koboldcpp_default.so" ]; then
+            echo "✅ Library built successfully" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Library build failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Test Status" >> $GITHUB_STEP_SUMMARY
+          echo "- Build: ${{ steps.go_build.outcome }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Tests: ${{ steps.go_test.outcome }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Coverage: ${{ steps.coverage.outcome }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Code Quality: ${{ steps.go_quality.outcome }}" >> $GITHUB_STEP_SUMMARY
