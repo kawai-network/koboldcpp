@@ -502,7 +502,7 @@ func CloseLibrary() error {
 // Function pointers - will be registered with purego
 var (
 	loadModel              func(*LoadModelInputs) bool
-	generate               func(*GenerationInputs) GenerationOutputs
+	generate               func(*GenerationOutputs, *GenerationInputs)
 	newToken               func(int32) *byte
 	getStreamCount         func() int32
 	hasFinished            func() bool
@@ -521,10 +521,10 @@ var (
 	getTotalGens           func() int32
 	getLastStopReason      func() int32
 	abortGenerate          func() bool
-	tokenCount             func(*byte, bool) TokenCountOutputs
+	tokenCount             func(*TokenCountOutputs, *byte, bool)
 	getPendingOutput       func() *byte
 	getChatTemplate        func() *byte
-	lastLogprobs           func() LastLogprobsOutputs
+	lastLogprobs           func(*LastLogprobsOutputs)
 	detokenize             func(TokenCountOutputs) *byte
 
 	// State management (KV cache)
@@ -538,21 +538,21 @@ var (
 
 	// SD functions
 	sdLoadModel func(*SDLoadModelInputs) bool
-	sdGenerate  func(*SDGenerationInputs) SDGenerationOutputs
-	sdUpscale   func(*SDUpscaleInputs) SDGenerationOutputs
-	sdGetInfo   func() SDInfoOutputs
+	sdGenerate  func(*SDGenerationOutputs, *SDGenerationInputs)
+	sdUpscale   func(*SDGenerationOutputs, *SDUpscaleInputs)
+	sdGetInfo   func(*SDInfoOutputs)
 
 	// Whisper functions
 	whisperLoadModel func(*WhisperLoadModelInputs) bool
-	whisperGenerate  func(*WhisperGenerationInputs) WhisperGenerationOutputs
+	whisperGenerate  func(*WhisperGenerationOutputs, *WhisperGenerationInputs)
 
 	// TTS functions
 	ttsLoadModel func(*TTSLoadModelInputs) bool
-	ttsGenerate  func(*TTSGenerationInputs) TTSGenerationOutputs
+	ttsGenerate  func(*TTSGenerationOutputs, *TTSGenerationInputs)
 
 	// Embeddings functions
 	embeddingsLoadModel func(*EmbeddingsLoadModelInputs) bool
-	embeddingsGenerate  func(*EmbeddingsGenerationInputs) EmbeddingsGenerationOutputs
+	embeddingsGenerate  func(*EmbeddingsGenerationOutputs, *EmbeddingsGenerationInputs)
 )
 
 // RegisterFunctions registers all C functions with purego - matches Python handle setup
@@ -668,7 +668,9 @@ func LoadModel(inputs *LoadModelInputs) bool {
 
 // Generate generates text - matches Python generate()
 func Generate(inputs *GenerationInputs) GenerationOutputs {
-	return generate(inputs)
+	var output GenerationOutputs
+	generate(&output, inputs)
+	return output
 }
 
 // SDLoadModel loads SD model - matches Python sd_load_model()
@@ -678,7 +680,23 @@ func SDLoadModel(inputs *SDLoadModelInputs) bool {
 
 // SDGenerate generates image - matches Python sd_generate()
 func SDGenerate(inputs *SDGenerationInputs) SDGenerationOutputs {
-	return sdGenerate(inputs)
+	var output SDGenerationOutputs
+	sdGenerate(&output, inputs)
+	return output
+}
+
+// SDUpscale upscales image - matches Python sd_upscale()
+func SDUpscale(inputs *SDUpscaleInputs) SDGenerationOutputs {
+	var output SDGenerationOutputs
+	sdUpscale(&output, inputs)
+	return output
+}
+
+// SDGetInfo gets SD info - matches Python sd_get_info()
+func SDGetInfo() SDInfoOutputs {
+	var output SDInfoOutputs
+	sdGetInfo(&output)
+	return output
 }
 
 // WhisperLoadModel loads Whisper model - matches Python whisper_load_model()
@@ -688,7 +706,9 @@ func WhisperLoadModel(inputs *WhisperLoadModelInputs) bool {
 
 // WhisperGenerate transcribes audio - matches Python whisper_generate()
 func WhisperGenerate(inputs *WhisperGenerationInputs) WhisperGenerationOutputs {
-	return whisperGenerate(inputs)
+	var output WhisperGenerationOutputs
+	whisperGenerate(&output, inputs)
+	return output
 }
 
 // TTSLoadModel loads TTS model - matches Python tts_load_model()
@@ -698,7 +718,9 @@ func TTSLoadModel(inputs *TTSLoadModelInputs) bool {
 
 // TTSGenerate generates speech - matches Python tts_generate()
 func TTSGenerate(inputs *TTSGenerationInputs) TTSGenerationOutputs {
-	return ttsGenerate(inputs)
+	var output TTSGenerationOutputs
+	ttsGenerate(&output, inputs)
+	return output
 }
 
 // EmbeddingsLoadModel loads embeddings model - matches Python embeddings_load_model()
@@ -708,7 +730,9 @@ func EmbeddingsLoadModel(inputs *EmbeddingsLoadModelInputs) bool {
 
 // EmbeddingsGenerate generates embeddings - matches Python embeddings_generate()
 func EmbeddingsGenerate(inputs *EmbeddingsGenerationInputs) EmbeddingsGenerationOutputs {
-	return embeddingsGenerate(inputs)
+	var output EmbeddingsGenerationOutputs
+	embeddingsGenerate(&output, inputs)
+	return output
 }
 
 // HasFinished checks if generation is finished
@@ -733,7 +757,9 @@ func GetChatTemplate() string {
 
 // TokenCount counts tokens in text
 func TokenCount(text string, addSpecial bool) TokenCountOutputs {
-	return tokenCount(CString(text), addSpecial)
+	var output TokenCountOutputs
+	tokenCount(&output, CString(text), addSpecial)
+	return output
 }
 
 // GetStreamCount gets current stream count
