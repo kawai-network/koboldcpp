@@ -64,6 +64,9 @@ jobs:
           # Build default library (Metal-enabled for macOS)
           make LLAMA_METAL=1 LLAMA_PORTABLE=1
           
+          # Rename .so to .dylib for macOS Go bindings compatibility
+          mv koboldcpp_default.so koboldcpp_default.dylib
+          
           # List built libraries
           echo "=== Built Libraries ==="
           ls -lh *.so *.dylib 2>/dev/null || echo "No .so/.dylib files found"
@@ -82,12 +85,12 @@ jobs:
           echo "=== Verifying Library Files ==="
           
           # Check for required library
-          if [ -f "koboldcpp_default.so" ]; then
-            echo "✅ koboldcpp_default.so found"
-            file koboldcpp_default.so
-            otool -L koboldcpp_default.so || true
+          if [ -f "koboldcpp_default.dylib" ]; then
+            echo "✅ koboldcpp_default.dylib found"
+            file koboldcpp_default.dylib
+            otool -L koboldcpp_default.dylib || true
           else
-            echo "❌ koboldcpp_default.so NOT found"
+            echo "❌ koboldcpp_default.dylib NOT found"
             exit 1
           fi
 
