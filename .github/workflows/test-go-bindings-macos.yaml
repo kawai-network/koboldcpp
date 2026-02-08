@@ -111,6 +111,14 @@ jobs:
           
           echo "=== Build Complete ==="
 
+      - name: Download Test Model
+        id: download_model
+        working-directory: ./go
+        run: |
+          echo "=== Downloading Test Model ==="
+          curl -L -o baby_llama.gguf https://huggingface.co/concedo/koboldcpp/resolve/main/baby_llama.gguf
+          ls -lh baby_llama.gguf
+
       - name: Run Go Tests
         id: go_test
         working-directory: ./go

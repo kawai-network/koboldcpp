@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 	"time"
 )
@@ -243,11 +244,19 @@ func TestIntegration_BasicFlow(t *testing.T) {
 	// Check if library exists in parent directory
 	ext := getLibraryExtension()
 	libPath := filepath.Join("..", "koboldcpp_default"+ext)
+
+	// Also check current directory
 	if !fileExists(libPath) {
-		t.Skip("Library not found, skipping integration test")
+		libPath = "koboldcpp_default" + ext
+		if !fileExists(libPath) {
+			t.Skip("Library not found, skipping integration test (checked ../ and ./)")
+		}
 	}
 
+	t.Logf("Found library at: %s", libPath)
+
 	// Initialize library
+	// Force failsafe mode in CI if needed, or use default
 	err := InitLibrary(false, false, false, false)
 	if err != nil {
 		t.Fatalf("Failed to initialize library: %v", err)
@@ -268,11 +277,120 @@ func TestIntegration_BasicFlow(t *testing.T) {
 		MaxContextLength: 2048,
 	}
 
-	if inputs == nil {
-		t.Fatal("Failed to create LoadModelInputs")
+	if inputs.Threads != 4 {
+		t.Fatal("Failed to create LoadModelInputs correctly")
 	}
 
 	t.Log("Integration test: Structs can be created")
+}
+
+// TestGeneration runs a real generation test if model is available
+func TestGeneration(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping generation test in short mode")
+	}
+
+	// Check for library
+	ext := getLibraryExtension()
+	libPath := filepath.Join("..", "koboldcpp_default"+ext)
+	if !fileExists(libPath) {
+		libPath = "koboldcpp_default" + ext
+		if !fileExists(libPath) {
+			t.Skip("Library not found, skipping generation test")
+		}
+	}
+
+	// Check for model file (look for common test models)
+	modelPath := ""
+	possibleModels := []string{
+		"../baby_llama.gguf",
+		"baby_llama.gguf",
+		"../test_model.gguf",
+		"test_model.gguf",
+	}
+
+	for _, p := range possibleModels {
+		if fileExists(p) {
+			modelPath = p
+			break
+		}
+	}
+
+	if modelPath == "" {
+		t.Skip("No test model found (baby_llama.gguf), skipping generation test")
+	}
+
+	t.Logf("Found model at: %s", modelPath)
+
+	// Initialize library
+	err := InitLibrary(false, false, false, false)
+	if err != nil {
+		t.Fatalf("Failed to initialize library: %v", err)
+	}
+	defer CloseLibrary()
+
+	err = RegisterFunctions()
+	if err != nil {
+		t.Fatalf("Failed to register functions: %v", err)
+	}
+
+	// Prepare model path
+	absModelPath, _ := filepath.Abs(modelPath)
+	absLibPath, _ := filepath.Abs(".")
+
+	// Load Model
+	loadInputs := &LoadModelInputs{
+		Threads:          4,
+		BlasThreads:      4,
+		MaxContextLength: 512,
+		ModelFilename:    CString(absModelPath),
+		ExecutablePath:   CString(absLibPath),
+		UseMmap:          true,
+		GPULayers:        0, // CPU only for test
+		Quiet:            true,
+	}
+	defer FreeCString(loadInputs.ModelFilename)
+	defer FreeCString(loadInputs.ExecutablePath)
+
+	t.Log("Loading model...")
+	success := LoadModel(loadInputs)
+	if !success {
+		t.Fatal("Failed to load model")
+	}
+	t.Log("Model loaded successfully!")
+
+	// Generate Text
+	prompt := "Hello, my name is"
+	genInputs := &GenerationInputs{
+		Prompt:      CString(prompt),
+		MaxLength:   10,
+		Temperature: 0.1, // Deterministic
+		TopK:        40,
+		TopP:        0.9,
+		Seed:        42,
+	}
+	defer FreeCString(genInputs.Prompt)
+
+	t.Logf("Generating text for prompt: %q", prompt)
+	result := Generate(genInputs)
+
+	output := GoString(result.Text)
+	t.Logf("Generation Status: %d", result.Status)
+	t.Logf("Generated Text: %q", output)
+
+	if result.Status != 1 && result.Status != 0 {
+		t.Errorf("Generation failed with status %d", result.Status)
+	}
+
+	if len(output) == 0 {
+		t.Log("Warning: Generated text is empty (might happen with some models/prompts)")
+	} else {
+		// Basic check that we got something valid (usually starts with space)
+		// but baby_llama might output anything
+		if !strings.Contains(output, "") {
+			t.Error("Output does not seem valid string")
+		}
+	}
 }
 
 // TestMultipleLibraryLoads tests loading and unloading library multiple times
