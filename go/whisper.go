@@ -59,7 +59,7 @@ type cWhisperGenerationOutputs struct {
 // Whisper function pointers
 var (
 	whisperLoadModel       func(inputs *cWhisperLoadModelInputs) bool
-	whisperGenerate        func(inputs *cWhisperGenerationInputs) cWhisperGenerationOutputs
+	whisperGeneratePtr     func(inputs *cWhisperGenerationInputs, outputs *cWhisperGenerationOutputs)
 	getTotalTranscribeGens func() int32
 )
 
@@ -72,12 +72,12 @@ func initWhisperFunctions(handle uintptr) error {
 	}
 	purego.RegisterFunc(&whisperLoadModel, whisperLoadModelPtr)
 
-	// whisper_generate
-	whisperGeneratePtr, err := purego.Dlsym(handle, "whisper_generate")
+	// whisper_generate_ptr (pointer-based version for cross-platform compatibility)
+	whisperGeneratePtrPtr, err := purego.Dlsym(handle, "whisper_generate_ptr")
 	if err != nil {
-		return fmt.Errorf("failed to load whisper_generate: %w", err)
+		return fmt.Errorf("failed to load whisper_generate_ptr: %w", err)
 	}
-	purego.RegisterFunc(&whisperGenerate, whisperGeneratePtr)
+	purego.RegisterFunc(&whisperGeneratePtr, whisperGeneratePtrPtr)
 
 	// get_total_transcribe_gens
 	getTotalTranscribeGensPtr, err := purego.Dlsym(handle, "get_total_transcribe_gens")
@@ -150,7 +150,8 @@ func (k *KoboldCpp) WhisperTranscribe(inputs WhisperGenerationInputs) (*WhisperG
 		langCode:          langCode,
 	}
 
-	cOutputs := whisperGenerate(&cInputs)
+	var cOutputs cWhisperGenerationOutputs
+	whisperGeneratePtr(&cInputs, &cOutputs)
 
 	outputs := &WhisperGenerationOutputs{
 		Status: cOutputs.status,
