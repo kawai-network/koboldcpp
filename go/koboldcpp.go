@@ -6,8 +6,6 @@ import (
 	"os"
 	"runtime"
 	"unsafe"
-
-	"github.com/ebitengine/purego"
 )
 
 var (
@@ -57,10 +55,10 @@ func (k *KoboldCpp) LoadLibrary(variant LibraryVariant, libDir string) error {
 		return fmt.Errorf("library file not found: %s", libPath)
 	}
 
-	// Load the library
-	handle, err := purego.Dlopen(libPath, purego.RTLD_NOW|purego.RTLD_GLOBAL)
+	// Load the library using platform-specific implementation
+	handle, err := k.loadLibraryPlatform(libPath)
 	if err != nil {
-		return fmt.Errorf("failed to load library: %w", err)
+		return err
 	}
 
 	k.handle = handle
