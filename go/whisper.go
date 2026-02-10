@@ -58,8 +58,8 @@ type cWhisperGenerationOutputs struct {
 
 // Whisper function pointers
 var (
-	whisperLoadModel       func(inputs cWhisperLoadModelInputs) bool
-	whisperGenerate        func(inputs cWhisperGenerationInputs) cWhisperGenerationOutputs
+	whisperLoadModel       func(inputs *cWhisperLoadModelInputs) bool
+	whisperGenerate        func(inputs *cWhisperGenerationInputs) cWhisperGenerationOutputs
 	getTotalTranscribeGens func() int32
 )
 
@@ -118,7 +118,7 @@ func (k *KoboldCpp) LoadWhisperModel(inputs WhisperLoadModelInputs) error {
 		debugMode:       inputs.DebugMode,
 	}
 
-	success := whisperLoadModel(cInputs)
+	success := whisperLoadModel(&cInputs)
 	if !success {
 		return fmt.Errorf("failed to load Whisper model: %s", inputs.ModelFilename)
 	}
@@ -150,7 +150,7 @@ func (k *KoboldCpp) WhisperTranscribe(inputs WhisperGenerationInputs) (*WhisperG
 		langCode:          langCode,
 	}
 
-	cOutputs := whisperGenerate(cInputs)
+	cOutputs := whisperGenerate(&cInputs)
 
 	outputs := &WhisperGenerationOutputs{
 		Status: cOutputs.status,
