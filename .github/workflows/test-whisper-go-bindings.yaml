@@ -222,8 +222,8 @@ jobs:
             fi
           fi
 
-  integration-test:
-    name: Integration Test with Real Audio
+  integration-test-whisper:
+    name: Integration Test - Whisper
     runs-on: ubuntu-22.04
     needs: [test-go-bindings-linux]
     
@@ -318,6 +318,78 @@ jobs:
         run: |
           # Run full example with actual model and audio
           ./whisper_example ../.. ../../models/whisper-base.bin ../../test_audio.wav || echo "Example run completed"
+
+  integration-test-sd:
+    name: Integration Test - Stable Diffusion
+    runs-on: ubuntu-22.04
+    needs: [test-go-bindings-linux]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential
+
+      - name: Build KoboldCpp library with SD support
+        run: |
+          # Build with SD support (CPU only for testing)
+          make koboldcpp_default LLAMA_PORTABLE=1 LLAMA_SD=1
+          ls -lh *.so
+
+      - name: Test SD bindings availability
+        working-directory: go
+        run: |
+          cat > sd_integration_test.go << 'EOF'
+          package koboldcpp
+
+          import (
+              "testing"
+          )
+
+          func TestSDBindingsAvailable(t *testing.T) {
+              kcpp := New()
+              err := kcpp.LoadLibrary(LibDefault, "..")
+              if err != nil {
+                  t.Fatalf("Failed to load library: %v", err)
+              }
+              defer kcpp.Close()
+
+              // Test that SD functions are available (they should not crash)
+              // We don't load a model since SD models are large
+              info, err := kcpp.SDGetInfo()
+              if err != nil {
+                  t.Logf("SD functions not available (expected without model): %v", err)
+              } else {
+                  t.Logf("SD info status: %d", info.Status)
+              }
+              
+              t.Log("SD bindings test completed successfully")
+          }
+          EOF
+          go test -v -run TestSDBindingsAvailable
+
+      - name: Build SD examples
+        working-directory: go/examples
+        run: |
+          # Build SD examples to verify they compile
+          go build -v -o sd_example sd_example.go
+          go build -v -o sd_img2img_example sd_img2img_example.go
+          ls -lh sd_*
+
+      - name: Test SD example help output
+        working-directory: go/examples
+        run: |
+          # Test that examples show usage info
+          ./sd_example || echo "SD example shows usage information"
+          ./sd_img2img_example || echo "SD img2img example shows usage information"
 
   benchmark:
     name: Benchmark Go Bindings
