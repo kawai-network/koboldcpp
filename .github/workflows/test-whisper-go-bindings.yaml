@@ -155,9 +155,10 @@ jobs:
 
       - name: Set up w64devkit
         run: |
-          curl -L -o w64devkit.zip https://github.com/skeeto/w64devkit/releases/download/v1.23.0/w64devkit-x64-1.23.0.zip
-          unzip -q w64devkit.zip
-          echo "${{ github.workspace }}/w64devkit/bin" >> $GITHUB_PATH
+          curl -L https://github.com/skeeto/w64devkit/releases/download/v1.22.0/w64devkit-1.22.0.zip --output w64devkit.zip
+          Expand-Archive w64devkit.zip -DestinationPath .
+          echo "${{ github.workspace }}\w64devkit\bin" | Out-File -Append -FilePath $env:GITHUB_PATH -Encoding utf8
+        shell: pwsh
 
       - name: Build KoboldCpp library (CPU only)
         shell: bash
