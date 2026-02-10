@@ -344,3 +344,21 @@ extern int total_transcribe_gens;
 extern int last_draft_success;
 extern int last_draft_failed;
 extern stop_reason last_stop_reason;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+// Stable Diffusion pointer-based functions for FFI compatibility
+bool sd_load_model_ptr(const sd_load_model_inputs* inputs);
+void sd_generate_ptr(const sd_generation_inputs* inputs, sd_generation_outputs* outputs);
+void sd_upscale_ptr(const sd_upscale_inputs* inputs, sd_generation_outputs* outputs);
+void sd_get_info_ptr(sd_info_outputs* outputs);
+
+// Whisper pointer-based functions for FFI compatibility
+bool whisper_load_model_ptr(const whisper_load_model_inputs* inputs);
+void whisper_generate_ptr(const whisper_generation_inputs* inputs, whisper_generation_outputs* outputs);
+
+#ifdef __cplusplus
+}
+#endif
