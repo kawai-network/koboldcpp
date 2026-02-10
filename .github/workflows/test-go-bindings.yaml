@@ -378,7 +378,22 @@ jobs:
         run: |
           mkdir -p models
           # Download a very small SD model for testing (SDXS-512-0.9)
-          wget -q https://huggingface.co/IDKiro/sdxs-512-0.9/resolve/main/sdxs-512-0.9.safetensors -O models/sdxs-512.safetensors || echo "Model download failed, will skip generation test"
+          # Use curl with retry logic and follow redirects
+          curl -L --retry 3 --retry-delay 5 \
+            -o models/sdxs-512.safetensors \
+            https://huggingface.co/IDKiro/sdxs-512-0.9/resolve/main/sdxs-512-0.9.safetensors || {
+            echo "Model download failed"
+            rm -f models/sdxs-512.safetensors
+          }
+          # Verify file size (should be ~600MB)
+          if [ -f models/sdxs-512.safetensors ]; then
+            FILE_SIZE=$(stat -c%s models/sdxs-512.safetensors 2>/dev/null || stat -f%z models/sdxs-512.safetensors 2>/dev/null || echo 0)
+            echo "Downloaded file size: $FILE_SIZE bytes"
+            if [ "$FILE_SIZE" -lt 1000000 ]; then
+              echo "File too small, download likely failed"
+              rm -f models/sdxs-512.safetensors
+            fi
+          fi
           ls -lh models/ || true
 
       - name: Test SD bindings availability
@@ -400,10 +415,18 @@ jobs:
               }
               defer kcpp.Close()
 
-              // Check if model exists
+              // Check if model exists and has valid size
               modelPath := "../models/sdxs-512.safetensors"
-              if _, err := os.Stat(modelPath); os.IsNotExist(err) {
+              fileInfo, err := os.Stat(modelPath)
+              if os.IsNotExist(err) {
                   t.Skip("SD model not available, skipping generation test")
+              }
+              if err != nil {
+                  t.Skipf("Cannot stat model file: %v", err)
+              }
+              // Model should be at least 1MB (actual size is ~600MB)
+              if fileInfo.Size() < 1000000 {
+                  t.Skipf("Model file too small (%d bytes), download likely failed", fileInfo.Size())
               }
 
               // Try to get SD info first to check if SD is available
