@@ -1,4 +1,4 @@
-name: Whisper Go Bindings Tests
+name: Go Bindings Tests
 
 on:
   push:
@@ -12,8 +12,9 @@ on:
       - 'expose.cpp'
       - 'expose.h'
       - 'otherarch/whispercpp/**'
+      - 'otherarch/sdcpp/**'
       - 'Makefile'
-      - '.github/workflows/test-whisper-go-bindings.yaml'
+      - '.github/workflows/test-go-bindings.yaml'
   pull_request:
     branches:
       - concedo
@@ -25,8 +26,9 @@ on:
       - 'expose.cpp'
       - 'expose.h'
       - 'otherarch/whispercpp/**'
+      - 'otherarch/sdcpp/**'
       - 'Makefile'
-      - '.github/workflows/test-whisper-go-bindings.yaml'
+      - '.github/workflows/test-go-bindings.yaml'
   workflow_dispatch:
 
 jobs:
