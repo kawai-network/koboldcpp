@@ -222,8 +222,8 @@ jobs:
             fi
           fi
 
-  integration-test:
-    name: Integration Test with Real Audio
+  integration-test-whisper:
+    name: Integration Test - Whisper
     runs-on: ubuntu-22.04
     needs: [test-go-bindings-linux]
     
@@ -318,6 +318,126 @@ jobs:
         run: |
           # Run full example with actual model and audio
           ./whisper_example ../.. ../../models/whisper-base.bin ../../test_audio.wav || echo "Example run completed"
+
+  integration-test-sd:
+    name: Integration Test - Stable Diffusion
+    runs-on: ubuntu-22.04
+    needs: [test-go-bindings-linux]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential
+
+      - name: Build KoboldCpp library with SD support
+        run: |
+          # Build with SD support (CPU only for testing)
+          make koboldcpp_default LLAMA_PORTABLE=1 LLAMA_SD=1
+          ls -lh *.so
+
+      - name: Download SD model (tiny for testing)
+        run: |
+          mkdir -p models
+          # Download a very small SD model for testing (SDXS-512-0.9)
+          wget -q https://huggingface.co/IDKiro/sdxs-512-0.9/resolve/main/sdxs-512-0.9.safetensors -O models/sdxs-512.safetensors || echo "Model download failed, will skip generation test"
+          ls -lh models/ || true
+
+      - name: Test SD bindings availability
+        working-directory: go
+        run: |
+          cat > sd_integration_test.go << 'EOF'
+          package koboldcpp
+
+          import (
+              "os"
+              "testing"
+          )
+
+          func TestSDIntegration(t *testing.T) {
+              kcpp := New()
+              err := kcpp.LoadLibrary(LibDefault, "..")
+              if err != nil {
+                  t.Fatalf("Failed to load library: %v", err)
+              }
+              defer kcpp.Close()
+
+              // Check if model exists
+              modelPath := "../models/sdxs-512.safetensors"
+              if _, err := os.Stat(modelPath); os.IsNotExist(err) {
+                  t.Skip("SD model not available, skipping generation test")
+              }
+
+              // Load SD model
+              t.Log("Loading SD model...")
+              err = kcpp.LoadSDModel(SDLoadModelInputs{
+                  ModelFilename:  modelPath,
+                  ExecutablePath: "..",
+                  Threads:        4,
+                  Quiet:          true,
+              })
+              if err != nil {
+                  t.Fatalf("Failed to load SD model: %v", err)
+              }
+
+              // Generate a simple image
+              t.Log("Generating test image...")
+              result, err := kcpp.SDGenerate(SDGenerationInputs{
+                  Prompt:      "a simple red circle",
+                  Width:       512,
+                  Height:      512,
+                  SampleSteps: 1,
+                  Seed:        42,
+                  CFGScale:    1.0,
+              })
+              if err != nil {
+                  t.Fatalf("SD generation failed: %v", err)
+              }
+
+              t.Logf("SD generation status: %d", result.Status)
+              t.Logf("Generated image data length: %d bytes", len(result.Data))
+              
+              if result.Status != 1 {
+                  t.Errorf("Expected status 1, got %d", result.Status)
+              }
+              
+              if len(result.Data) == 0 {
+                  t.Error("Generated image data is empty")
+              }
+
+              t.Log("SD integration test completed successfully")
+          }
+          EOF
+          go test -v -run TestSDIntegration -timeout 10m
+
+      - name: Verify Go module for examples
+        working-directory: go
+        run: |
+          go mod download
+          go mod verify
+
+      - name: Build SD examples
+        working-directory: go
+        run: |
+          # Build SD examples to verify they compile (from parent directory)
+          go build -v -o examples/sd_example ./examples/sd_example.go
+          go build -v -o examples/sd_img2img_example ./examples/sd_img2img_example.go
+          ls -lh examples/sd_*
+
+      - name: Test SD example help output
+        working-directory: go/examples
+        run: |
+          # Test that examples show usage info
+          ./sd_example || echo "SD example shows usage information"
+          ./sd_img2img_example || echo "SD img2img example shows usage information"
 
   benchmark:
     name: Benchmark Go Bindings

@@ -202,17 +202,46 @@ extern "C"
     {
         return sdtype_load_model(inputs);
     }
+    // Pointer-based version for cross-platform FFI compatibility (Linux/Windows)
+    bool sd_load_model_ptr(const sd_load_model_inputs* inputs)
+    {
+        if (inputs) {
+            return sdtype_load_model(*inputs);
+        }
+        return false;
+    }
     sd_generation_outputs sd_generate(const sd_generation_inputs inputs)
     {
         return sdtype_generate(inputs);
+    }
+    // Pointer-based version for cross-platform FFI compatibility (Linux/Windows)
+    void sd_generate_ptr(const sd_generation_inputs* inputs, sd_generation_outputs* outputs)
+    {
+        if (inputs && outputs) {
+            *outputs = sdtype_generate(*inputs);
+        }
     }
     sd_generation_outputs sd_upscale(const sd_upscale_inputs inputs)
     {
         return sdtype_upscale(inputs);
     }
+    // Pointer-based version for cross-platform FFI compatibility (Linux/Windows)
+    void sd_upscale_ptr(const sd_upscale_inputs* inputs, sd_generation_outputs* outputs)
+    {
+        if (inputs && outputs) {
+            *outputs = sdtype_upscale(*inputs);
+        }
+    }
     sd_info_outputs sd_get_info()
     {
         return sdtype_get_info();
+    }
+    // Pointer-based version for cross-platform FFI compatibility (Linux/Windows)
+    void sd_get_info_ptr(sd_info_outputs* outputs)
+    {
+        if (outputs) {
+            *outputs = sdtype_get_info();
+        }
     }
 
     bool whisper_load_model(const whisper_load_model_inputs inputs)

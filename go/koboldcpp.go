@@ -70,6 +70,12 @@ func (k *KoboldCpp) LoadLibrary(variant LibraryVariant, libDir string) error {
 		return fmt.Errorf("failed to initialize whisper functions: %w", err)
 	}
 
+	// Initialize SD functions (optional - may not be available in all builds)
+	if err := initSDFunctions(handle); err != nil {
+		// SD functions are optional, just log the error
+		fmt.Printf("Warning: SD functions not available: %v\n", err)
+	}
+
 	return nil
 }
 
@@ -135,4 +141,9 @@ func freeCharPtr(ptr uintptr) {
 // readFile reads a file and returns its contents
 func readFile(path string) ([]byte, error) {
 	return os.ReadFile(path)
+}
+
+// writeFile writes data to a file
+func writeFile(path string, data []byte) error {
+	return os.WriteFile(path, data, 0644)
 }
