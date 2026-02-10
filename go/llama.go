@@ -347,17 +347,15 @@ func (k *KoboldCpp) LoadModel(inputs LoadModelInputs) error {
 
 	// Prepare override_kv array (all slots must have valid pointers)
 	var overrideKVPtrs [OverrideKVMax]uintptr
-	var overrideKVBytes [][]byte
+	var overrideKVBytes [OverrideKVMax][]byte
 	for i := 0; i < OverrideKVMax; i++ {
-		var kvBytes []byte
 		if i < len(inputs.OverrideKV) && inputs.OverrideKV[i] != "" {
-			kvBytes = append([]byte(inputs.OverrideKV[i]), 0)
+			overrideKVBytes[i] = append([]byte(inputs.OverrideKV[i]), 0)
 		} else {
 			// Empty string for unused slots (C++ code iterates all slots)
-			kvBytes = []byte{0}
+			overrideKVBytes[i] = []byte{0}
 		}
-		overrideKVBytes = append(overrideKVBytes, kvBytes)
-		overrideKVPtrs[i] = uintptr(unsafe.Pointer(&kvBytes[0]))
+		overrideKVPtrs[i] = uintptr(unsafe.Pointer(&overrideKVBytes[i][0]))
 	}
 
 	// Prepare tensor_split and draft_gpusplit arrays
