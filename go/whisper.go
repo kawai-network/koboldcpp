@@ -3,6 +3,7 @@ package koboldcpp
 import (
 	"encoding/base64"
 	"fmt"
+	"runtime"
 	"unsafe"
 
 	"github.com/ebitengine/purego"
@@ -96,29 +97,30 @@ func (k *KoboldCpp) LoadWhisperModel(inputs WhisperLoadModelInputs) error {
 	}
 
 	// Convert Go strings to C strings
-	modelFilename := stringToCharPtr(inputs.ModelFilename)
-	executablePath := stringToCharPtr(inputs.ExecutablePath)
-	vulkanInfo := stringToCharPtr(inputs.VulkanInfo)
-	devicesOverride := stringToCharPtr(inputs.DevicesOverride)
-
-	defer func() {
-		freeCharPtr(modelFilename)
-		freeCharPtr(executablePath)
-		freeCharPtr(vulkanInfo)
-		freeCharPtr(devicesOverride)
-	}()
+	// We need to keep the byte slices alive during the C call
+	modelFilenameBytes := append([]byte(inputs.ModelFilename), 0)
+	executablePathBytes := append([]byte(inputs.ExecutablePath), 0)
+	vulkanInfoBytes := append([]byte(inputs.VulkanInfo), 0)
+	devicesOverrideBytes := append([]byte(inputs.DevicesOverride), 0)
 
 	cInputs := cWhisperLoadModelInputs{
-		modelFilename:   modelFilename,
-		executablePath:  executablePath,
+		modelFilename:   uintptr(unsafe.Pointer(&modelFilenameBytes[0])),
+		executablePath:  uintptr(unsafe.Pointer(&executablePathBytes[0])),
 		mainGPU:         inputs.MainGPU,
-		vulkanInfo:      vulkanInfo,
-		devicesOverride: devicesOverride,
+		vulkanInfo:      uintptr(unsafe.Pointer(&vulkanInfoBytes[0])),
+		devicesOverride: uintptr(unsafe.Pointer(&devicesOverrideBytes[0])),
 		quiet:           inputs.Quiet,
 		debugMode:       inputs.DebugMode,
 	}
 
 	success := whisperLoadModel(&cInputs)
+
+	// Keep byte slices alive until after the C call
+	runtime.KeepAlive(modelFilenameBytes)
+	runtime.KeepAlive(executablePathBytes)
+	runtime.KeepAlive(vulkanInfoBytes)
+	runtime.KeepAlive(devicesOverrideBytes)
+
 	if !success {
 		return fmt.Errorf("failed to load Whisper model: %s", inputs.ModelFilename)
 	}
@@ -133,25 +135,25 @@ func (k *KoboldCpp) WhisperTranscribe(inputs WhisperGenerationInputs) (*WhisperG
 	}
 
 	// Convert Go strings to C strings
-	prompt := stringToCharPtr(inputs.Prompt)
-	audioData := stringToCharPtr(inputs.AudioData)
-	langCode := stringToCharPtr(inputs.LanguageCode)
-
-	defer func() {
-		freeCharPtr(prompt)
-		freeCharPtr(audioData)
-		freeCharPtr(langCode)
-	}()
+	// Keep byte slices alive during the C call
+	promptBytes := append([]byte(inputs.Prompt), 0)
+	audioDataBytes := append([]byte(inputs.AudioData), 0)
+	langCodeBytes := append([]byte(inputs.LanguageCode), 0)
 
 	cInputs := cWhisperGenerationInputs{
-		prompt:            prompt,
-		audioData:         audioData,
+		prompt:            uintptr(unsafe.Pointer(&promptBytes[0])),
+		audioData:         uintptr(unsafe.Pointer(&audioDataBytes[0])),
 		suppressNonSpeech: inputs.SuppressNonSpeech,
-		langCode:          langCode,
+		langCode:          uintptr(unsafe.Pointer(&langCodeBytes[0])),
 	}
 
 	var cOutputs cWhisperGenerationOutputs
 	whisperGeneratePtr(&cInputs, &cOutputs)
+
+	// Keep byte slices alive until after the C call
+	runtime.KeepAlive(promptBytes)
+	runtime.KeepAlive(audioDataBytes)
+	runtime.KeepAlive(langCodeBytes)
 
 	outputs := &WhisperGenerationOutputs{
 		Status: cOutputs.status,
