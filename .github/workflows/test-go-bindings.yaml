@@ -133,7 +133,7 @@ jobs:
         run: |
           cat > integration_test.go << 'EOF'
           package koboldcpp
-          import ("os"; "path/filepath"; "testing")
+          import ("os"; "path/filepath"; "strings"; "testing")
           
           func TestWhisperIntegration(t *testing.T) {
               kcpp := New()
@@ -185,6 +185,10 @@ jobs:
                   t.Fatalf("Failed to get absolute path: %v", err)
               }
               t.Logf("Using ExecutablePath: %s", absPath)
+              // Ensure ExecutablePath ends with path separator for SD embd_res/ lookup
+              if !strings.HasSuffix(absPath, string(filepath.Separator)) {
+                  absPath += string(filepath.Separator)
+              }
               if err := kcpp.LoadSDModel(SDLoadModelInputs{
                   ModelFilename: modelPath,
                   ExecutablePath: absPath,
@@ -310,7 +314,7 @@ jobs:
         run: |
           cat > integration_test.go << 'EOF'
           package koboldcpp
-          import ("os"; "path/filepath"; "testing")
+          import ("os"; "path/filepath"; "strings"; "testing")
           
           func TestWhisperIntegration(t *testing.T) {
               kcpp := New()
@@ -362,6 +366,10 @@ jobs:
                   t.Fatalf("Failed to get absolute path: %v", err)
               }
               t.Logf("Using ExecutablePath: %s", absPath)
+              // Ensure ExecutablePath ends with path separator for SD embd_res/ lookup
+              if !strings.HasSuffix(absPath, string(filepath.Separator)) {
+                  absPath += string(filepath.Separator)
+              }
               if err := kcpp.LoadSDModel(SDLoadModelInputs{
                   ModelFilename: modelPath,
                   ExecutablePath: absPath,
@@ -501,7 +509,7 @@ jobs:
         run: |
           cat > integration_test.go << 'EOF'
           package koboldcpp
-          import ("os"; "path/filepath"; "testing")
+          import ("os"; "path/filepath"; "strings"; "testing")
           
           func TestWhisperIntegration(t *testing.T) {
               kcpp := New()
@@ -553,6 +561,10 @@ jobs:
                   t.Fatalf("Failed to get absolute path: %v", err)
               }
               t.Logf("Using ExecutablePath: %s", absPath)
+              // Ensure ExecutablePath ends with path separator for SD embd_res/ lookup
+              if !strings.HasSuffix(absPath, string(filepath.Separator)) {
+                  absPath += string(filepath.Separator)
+              }
               if err := kcpp.LoadSDModel(SDLoadModelInputs{
                   ModelFilename: modelPath,
                   ExecutablePath: absPath,
