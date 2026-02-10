@@ -567,11 +567,14 @@ func (k *KoboldCpp) TokenCount(input string, addBOS bool) (*TokenCountOutputs, e
 	// Convert C array to Go slice
 	var ids []int
 	if cOutputs.count > 0 && cOutputs.ids != 0 {
-		// This is unsafe but necessary for FFI
-		idsPtr := (*[1 << 30]int32)(unsafe.Pointer(cOutputs.ids))
+		// Convert uintptr to pointer for array access
+		// This is safe because we know the array size from count
+		// and the memory is managed by the C library
+		//nolint:unsafeptr // Required for FFI with C arrays
+		idsSlice := unsafe.Slice((*int32)(unsafe.Pointer(cOutputs.ids)), cOutputs.count)
 		ids = make([]int, cOutputs.count)
 		for i := 0; i < int(cOutputs.count); i++ {
-			ids[i] = int(idsPtr[i])
+			ids[i] = int(idsSlice[i])
 		}
 	}
 

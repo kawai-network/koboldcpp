@@ -95,6 +95,7 @@ jobs:
           go build -v -o examples/simple_whisper ./examples/simple_whisper.go
           go build -v -o examples/sd_example ./examples/sd_example.go
           go build -v -o examples/sd_img2img_example ./examples/sd_img2img_example.go
+          go build -v -o examples/llama_example ./examples/llama_example.go
           ls -lh examples/
 
       - name: Run Whisper integration test
@@ -181,6 +182,7 @@ jobs:
           go build -v -o examples/simple_whisper ./examples/simple_whisper.go
           go build -v -o examples/sd_example ./examples/sd_example.go
           go build -v -o examples/sd_img2img_example ./examples/sd_img2img_example.go
+          go build -v -o examples/llama_example ./examples/llama_example.go
           ls -lh examples/
 
       - name: Run Whisper integration test
@@ -280,6 +282,7 @@ jobs:
           go build -v -o examples/simple_whisper.exe ./examples/simple_whisper.go
           go build -v -o examples/sd_example.exe ./examples/sd_example.go
           go build -v -o examples/sd_img2img_example.exe ./examples/sd_img2img_example.go
+          go build -v -o examples/llama_example.exe ./examples/llama_example.go
           ls -lh examples/
 
       - name: Run Whisper integration test
