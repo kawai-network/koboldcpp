@@ -50,7 +50,7 @@ jobs:
       - name: Build KoboldCpp library (CPU only)
         run: |
           # Build only the default CPU library for testing
-          make koboldcpp_default.so LLAMA_PORTABLE=1
+          make koboldcpp_default LLAMA_PORTABLE=1
           ls -lh *.so
 
       - name: Download Whisper test model
@@ -110,7 +110,7 @@ jobs:
       - name: Build KoboldCpp library (CPU only)
         run: |
           # Build only the default CPU library for testing
-          make koboldcpp_default.so LLAMA_PORTABLE=1
+          make koboldcpp_default LLAMA_PORTABLE=1
           ls -lh *.so *.dylib || true
 
       - name: Download Whisper test model
@@ -163,7 +163,7 @@ jobs:
         shell: bash
         run: |
           # Build only the default CPU library for testing
-          make koboldcpp_default.dll LLAMA_PORTABLE=1
+          make koboldcpp_default LLAMA_PORTABLE=1
           ls -lh *.dll
 
       - name: Download Whisper test model
@@ -251,7 +251,7 @@ jobs:
       - name: Build KoboldCpp library
         run: |
           # Build only the default CPU library for testing
-          make koboldcpp_default.so LLAMA_PORTABLE=1
+          make koboldcpp_default LLAMA_PORTABLE=1
           ls -lh *.so
 
       - name: Download Whisper model
