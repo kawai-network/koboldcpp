@@ -329,16 +329,13 @@ func (k *KoboldCpp) LoadModel(inputs LoadModelInputs) error {
 		return ErrLibraryNotLoaded
 	}
 
-	// Helper function to convert string to C string pointer (NULL if empty)
+	// Helper function to convert string to C string pointer (empty string if not provided)
 	toCString := func(s string) (uintptr, []byte) {
-		if s == "" {
-			return 0, nil
-		}
 		bytes := append([]byte(s), 0)
 		return uintptr(unsafe.Pointer(&bytes[0])), bytes
 	}
 
-	// Convert Go strings to C strings
+	// Convert Go strings to C strings (always non-NULL, can be empty string)
 	executablePathPtr, executablePathBytes := toCString(inputs.ExecutablePath)
 	modelFilenamePtr, modelFilenameBytes := toCString(inputs.ModelFilename)
 	loraFilenamePtr, loraFilenameBytes := toCString(inputs.LoraFilename)
@@ -352,11 +349,9 @@ func (k *KoboldCpp) LoadModel(inputs LoadModelInputs) error {
 	var overrideKVPtrs [OverrideKVMax]uintptr
 	var overrideKVBytes [][]byte
 	for i := 0; i < OverrideKVMax && i < len(inputs.OverrideKV); i++ {
-		if inputs.OverrideKV[i] != "" {
-			kvBytes := append([]byte(inputs.OverrideKV[i]), 0)
-			overrideKVBytes = append(overrideKVBytes, kvBytes)
-			overrideKVPtrs[i] = uintptr(unsafe.Pointer(&kvBytes[0]))
-		}
+		kvBytes := append([]byte(inputs.OverrideKV[i]), 0)
+		overrideKVBytes = append(overrideKVBytes, kvBytes)
+		overrideKVPtrs[i] = uintptr(unsafe.Pointer(&kvBytes[0]))
 	}
 
 	// Prepare tensor_split and draft_gpusplit arrays
