@@ -4,9 +4,9 @@ Go bindings for KoboldCpp using [purego](https://github.com/ebitengine/purego) f
 
 ## Features
 
+- ✅ **Llama Text Generation** - Generate text with GGUF models (llama.cpp)
 - ✅ **Whisper Speech-to-Text** - Transcribe audio to text
 - ✅ **Stable Diffusion Image Generation** - Generate images from text prompts
-- 🚧 Text Generation (GGUF models) - Coming soon
 - 🚧 Text-to-Speech - Coming soon
 - 🚧 Text Embeddings - Coming soon
 
@@ -344,6 +344,122 @@ Contributions are welcome! Please submit issues and pull requests on GitHub.
 - [Whisper Models](https://huggingface.co/koboldcpp/whisper)
 - [Purego](https://github.com/ebitengine/purego)
 
+
+## Llama Text Generation
+
+### Basic Text Generation
+
+```go
+package main
+
+import (
+    "fmt"
+    "log"
+    
+    "github.com/kawai-network/koboldcpp"
+)
+
+func main() {
+    kcpp := koboldcpp.New()
+    
+    // Load library
+    err := kcpp.LoadLibrary(koboldcpp.LibDefault, ".")
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer kcpp.Close()
+    
+    // Load LLM model
+    err = kcpp.LoadModel(koboldcpp.LoadModelInputs{
+        ModelFilename:    "models/llama-2-7b.gguf",
+        ExecutablePath:   ".",
+        Threads:          4,
+        MaxContextLength: 2048,
+        GPULayers:        0, // CPU only, set > 0 for GPU
+        BatchSize:        512,
+    })
+    if err != nil {
+        log.Fatal(err)
+    }
+    
+    // Generate text
+    result, err := kcpp.Generate(koboldcpp.GenerationInputs{
+        Prompt:      "Hello, how are you?",
+        MaxLength:   100,
+        Temperature: 0.7,
+        TopP:        0.9,
+        TopK:        40,
+        RepPen:      1.1,
+    })
+    if err != nil {
+        log.Fatal(err)
+    }
+    
+    fmt.Println("Generated:", result.Text)
+    fmt.Printf("Tokens: %d prompt + %d completion\n", 
+        result.PromptTokens, result.CompletionTokens)
+}
+```
+
+### Token Counting
+
+```go
+// Count tokens in text
+tokenCount, err := kcpp.TokenCount("Hello, world!", true)
+if err != nil {
+    log.Fatal(err)
+}
+
+fmt.Printf("Token count: %d\n", tokenCount.Count)
+fmt.Printf("Token IDs: %v\n", tokenCount.IDs)
+```
+
+### Streaming Generation
+
+```go
+// Start generation (non-blocking)
+go func() {
+    result, err := kcpp.Generate(koboldcpp.GenerationInputs{
+        Prompt:    "Write a story:",
+        MaxLength: 500,
+    })
+    if err != nil {
+        log.Fatal(err)
+    }
+}()
+
+// Poll for tokens
+for !kcpp.HasFinished() {
+    count := kcpp.GetStreamCount()
+    for i := 0; i < count; i++ {
+        token, err := kcpp.GetStreamToken(i)
+        if err == nil {
+            fmt.Print(token)
+        }
+    }
+    time.Sleep(100 * time.Millisecond)
+}
+```
+
+### Advanced Generation Parameters
+
+```go
+result, err := kcpp.Generate(koboldcpp.GenerationInputs{
+    Prompt:           "Translate to French: Hello",
+    MaxLength:        50,
+    Temperature:      0.7,
+    TopP:             0.9,
+    TopK:             40,
+    MinP:             0.05,
+    RepPen:           1.1,
+    RepPenRange:      256,
+    PresencePenalty:  0.0,
+    Mirostat:         0,
+    Grammar:          "", // GBNF grammar
+    StopSequence:     []string{"\n", "###"},
+    Seed:             42,
+})
+```
 
 ## Stable Diffusion Image Generation
 
