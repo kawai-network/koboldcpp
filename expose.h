@@ -351,6 +351,7 @@ extern "C" {
 
 // Llama text generation pointer-based functions for FFI compatibility
 void generate_ptr(const generation_inputs* inputs, generation_outputs* outputs);
+void token_count_ptr(const char * input, bool addbos, token_count_outputs* output);
 
 // Stable Diffusion pointer-based functions for FFI compatibility
 bool sd_load_model_ptr(const sd_load_model_inputs* inputs);

@@ -383,6 +383,14 @@ extern "C"
         return output;
     }
 
+    // Pointer-based version for cross-platform FFI compatibility (Linux/Windows)
+    void token_count_ptr(const char * input, bool addbos, token_count_outputs* output)
+    {
+        if (output) {
+            *output = token_count(input, addbos);
+        }
+    }
+
     static std::string detokenized_str = ""; //just share a static object for detokenizing
     const char * detokenize(const token_count_outputs input)
     {

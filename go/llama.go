@@ -263,7 +263,7 @@ var (
 	loadModelFunc      func(inputs *cLoadModelInputs) bool
 	generateFunc       func(inputs *cGenerationInputs, outputs *cGenerationOutputs)
 	abortGenerateFunc  func() bool
-	tokenCountFunc     func(input uintptr, addbos bool) cTokenCountOutputs
+	tokenCountFunc     func(input uintptr, addbos bool, output *cTokenCountOutputs)
 	newTokenFunc       func(idx int32) uintptr
 	getStreamCountFunc func() int32
 	hasFinishedFunc    func() bool
@@ -292,10 +292,10 @@ func initLlamaFunctions(handle uintptr) error {
 	}
 	purego.RegisterFunc(&abortGenerateFunc, abortGeneratePtr)
 
-	// token_count
-	tokenCountPtr, err := dlsymPlatform(handle, "token_count")
+	// token_count_ptr (pointer-based for cross-platform compatibility)
+	tokenCountPtr, err := dlsymPlatform(handle, "token_count_ptr")
 	if err != nil {
-		return fmt.Errorf("failed to load token_count: %w", err)
+		return fmt.Errorf("failed to load token_count_ptr: %w", err)
 	}
 	purego.RegisterFunc(&tokenCountFunc, tokenCountPtr)
 
@@ -561,7 +561,8 @@ func (k *KoboldCpp) TokenCount(input string, addBOS bool) (*TokenCountOutputs, e
 	}
 
 	inputBytes := append([]byte(input), 0)
-	cOutputs := tokenCountFunc(uintptr(unsafe.Pointer(&inputBytes[0])), addBOS)
+	var cOutputs cTokenCountOutputs
+	tokenCountFunc(uintptr(unsafe.Pointer(&inputBytes[0])), addBOS, &cOutputs)
 
 	runtime.KeepAlive(inputBytes)
 
