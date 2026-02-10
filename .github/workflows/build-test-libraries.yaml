@@ -1,0 +1,148 @@
+name: Build Test Libraries
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Library version (e.g., v1.0.0)'
+        required: true
+        default: 'v1.0.0'
+  push:
+    branches:
+      - concedo
+      - concedo_experimental
+    paths:
+      - 'expose.cpp'
+      - 'expose.h'
+      - 'otherarch/**'
+      - 'llama.cpp/**'
+      - 'Makefile'
+      - '.github/workflows/build-test-libraries.yaml'
+
+jobs:
+  build-linux:
+    name: Build Linux Test Library
+    runs-on: ubuntu-22.04
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential
+
+      - name: Build KoboldCpp library
+        run: |
+          make koboldcpp_default LLAMA_PORTABLE=1 LLAMA_SD=1
+          ls -lh *.so
+
+      - name: Package library
+        run: |
+          mkdir -p artifacts/linux
+          cp koboldcpp_default.so artifacts/linux/
+          tar -czf koboldcpp-linux-x64.tar.gz -C artifacts/linux .
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: koboldcpp-linux-x64
+          path: koboldcpp-linux-x64.tar.gz
+
+  build-macos:
+    name: Build macOS Test Library
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build KoboldCpp library
+        run: |
+          make koboldcpp_default LLAMA_PORTABLE=1 LLAMA_SD=1
+          ls -lh *.so *.dylib || true
+
+      - name: Package library
+        run: |
+          mkdir -p artifacts/macos
+          cp koboldcpp_default.so artifacts/macos/ || cp koboldcpp_default.dylib artifacts/macos/koboldcpp_default.so || true
+          tar -czf koboldcpp-macos-x64.tar.gz -C artifacts/macos .
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: koboldcpp-macos-x64
+          path: koboldcpp-macos-x64.tar.gz
+
+  build-windows:
+    name: Build Windows Test Library
+    runs-on: windows-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up w64devkit
+        run: |
+          curl -L https://github.com/skeeto/w64devkit/releases/download/v1.22.0/w64devkit-1.22.0.zip --output w64devkit.zip
+          Expand-Archive w64devkit.zip -DestinationPath .
+          echo "${{ github.workspace }}\w64devkit\bin" | Out-File -Append -FilePath $env:GITHUB_PATH -Encoding utf8
+        shell: pwsh
+
+      - name: Build KoboldCpp library
+        shell: bash
+        run: |
+          make koboldcpp_default LLAMA_PORTABLE=1 LLAMA_SD=1
+          ls -lh *.dll
+
+      - name: Package library
+        shell: bash
+        run: |
+          mkdir -p artifacts/windows
+          cp koboldcpp_default.dll artifacts/windows/
+          tar -czf koboldcpp-windows-x64.tar.gz -C artifacts/windows .
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: koboldcpp-windows-x64
+          path: koboldcpp-windows-x64.tar.gz
+
+  create-release:
+    name: Create GitHub Release
+    needs: [build-linux, build-macos, build-windows]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: test-libs-${{ github.event.inputs.version }}
+          name: Test Libraries ${{ github.event.inputs.version }}
+          body: |
+            Pre-built KoboldCpp libraries for testing Go bindings.
+            
+            **Platforms:**
+            - Linux x64 (Ubuntu 22.04)
+            - macOS x64
+            - Windows x64
+            
+            **Build Configuration:**
+            - CPU only (LLAMA_PORTABLE=1)
+            - Stable Diffusion support (LLAMA_SD=1)
+            
+            **Usage:**
+            These libraries are automatically downloaded by the test workflow.
+          files: |
+            artifacts/koboldcpp-linux-x64/koboldcpp-linux-x64.tar.gz
+            artifacts/koboldcpp-macos-x64/koboldcpp-macos-x64.tar.gz
+            artifacts/koboldcpp-windows-x64/koboldcpp-windows-x64.tar.gz
+          draft: false
+          prerelease: false

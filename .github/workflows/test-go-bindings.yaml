@@ -31,6 +31,10 @@ on:
       - '.github/workflows/test-go-bindings.yaml'
   workflow_dispatch:
 
+env:
+  # Bump this version when C++ code changes to trigger rebuild
+  KCPP_TEST_LIB_VERSION: v1.0.0
+
 jobs:
   test-go-bindings-linux:
     name: Test Go Bindings (Linux)
@@ -51,18 +55,30 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential ffmpeg
 
+      - name: Try download pre-built library
+        id: download-lib
+        continue-on-error: true
+        run: |
+          echo "Attempting to download pre-built library version ${{ env.KCPP_TEST_LIB_VERSION }}"
+          curl -L -f -o koboldcpp-linux-x64.tar.gz \
+            "https://github.com/${{ github.repository }}/releases/download/test-libs-${{ env.KCPP_TEST_LIB_VERSION }}/koboldcpp-linux-x64.tar.gz" || exit 1
+          tar -xzf koboldcpp-linux-x64.tar.gz
+          ls -lh *.so
+          echo "downloaded=true" >> $GITHUB_OUTPUT
+
+      - name: Build KoboldCpp library (fallback)
+        if: steps.download-lib.outputs.downloaded != 'true'
+        run: |
+          echo "Pre-built library not found, building from source..."
+          make koboldcpp_default LLAMA_PORTABLE=1 LLAMA_SD=1
+          ls -lh *.so
+
       - name: Cache SD model
         id: cache-sd-model
         uses: actions/cache@v4
         with:
           path: models/sd-model.safetensors
           key: sd-model-dreamshaper-v8
-
-      - name: Build KoboldCpp library (CPU only with SD support)
-        run: |
-          # Build with SD support for testing
-          make koboldcpp_default LLAMA_PORTABLE=1 LLAMA_SD=1
-          ls -lh *.so
 
       - name: Download test models
         run: |
@@ -297,18 +313,30 @@ jobs:
         run: |
           brew install ffmpeg
 
+      - name: Try download pre-built library
+        id: download-lib
+        continue-on-error: true
+        run: |
+          echo "Attempting to download pre-built library version ${{ env.KCPP_TEST_LIB_VERSION }}"
+          curl -L -f -o koboldcpp-macos-x64.tar.gz \
+            "https://github.com/${{ github.repository }}/releases/download/test-libs-${{ env.KCPP_TEST_LIB_VERSION }}/koboldcpp-macos-x64.tar.gz" || exit 1
+          tar -xzf koboldcpp-macos-x64.tar.gz
+          ls -lh *.so *.dylib || true
+          echo "downloaded=true" >> $GITHUB_OUTPUT
+
+      - name: Build KoboldCpp library (fallback)
+        if: steps.download-lib.outputs.downloaded != 'true'
+        run: |
+          echo "Pre-built library not found, building from source..."
+          make koboldcpp_default LLAMA_PORTABLE=1 LLAMA_SD=1
+          ls -lh *.so *.dylib || true
+
       - name: Cache SD model
         id: cache-sd-model
         uses: actions/cache@v4
         with:
           path: models/sd-model.safetensors
           key: sd-model-dreamshaper-v8
-
-      - name: Build KoboldCpp library (CPU only with SD support)
-        run: |
-          # Build with SD support for testing
-          make koboldcpp_default LLAMA_PORTABLE=1 LLAMA_SD=1
-          ls -lh *.so *.dylib || true
 
       - name: Download test models
         run: |
@@ -539,19 +567,32 @@ jobs:
           choco install ffmpeg -y
         shell: pwsh
 
+      - name: Try download pre-built library
+        id: download-lib
+        continue-on-error: true
+        shell: bash
+        run: |
+          echo "Attempting to download pre-built library version ${{ env.KCPP_TEST_LIB_VERSION }}"
+          curl -L -f -o koboldcpp-windows-x64.tar.gz \
+            "https://github.com/${{ github.repository }}/releases/download/test-libs-${{ env.KCPP_TEST_LIB_VERSION }}/koboldcpp-windows-x64.tar.gz" || exit 1
+          tar -xzf koboldcpp-windows-x64.tar.gz
+          ls -lh *.dll
+          echo "downloaded=true" >> $GITHUB_OUTPUT
+
+      - name: Build KoboldCpp library (fallback)
+        if: steps.download-lib.outputs.downloaded != 'true'
+        shell: bash
+        run: |
+          echo "Pre-built library not found, building from source..."
+          make koboldcpp_default LLAMA_PORTABLE=1 LLAMA_SD=1
+          ls -lh *.dll
+
       - name: Cache SD model
         id: cache-sd-model
         uses: actions/cache@v4
         with:
           path: models/sd-model.safetensors
           key: sd-model-dreamshaper-v8
-
-      - name: Build KoboldCpp library (CPU only with SD support)
-        shell: bash
-        run: |
-          # Build with SD support for testing
-          make koboldcpp_default LLAMA_PORTABLE=1 LLAMA_SD=1
-          ls -lh *.dll
 
       - name: Download test models
         shell: bash
