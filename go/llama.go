@@ -271,10 +271,10 @@ var (
 
 // initLlamaFunctions initializes the Llama function pointers
 func initLlamaFunctions(handle uintptr) error {
-	// load_model
-	loadModelPtr, err := dlsymPlatform(handle, "load_model")
+	// load_model_ptr (pointer-based for cross-platform compatibility)
+	loadModelPtr, err := dlsymPlatform(handle, "load_model_ptr")
 	if err != nil {
-		return fmt.Errorf("failed to load load_model: %w", err)
+		return fmt.Errorf("failed to load load_model_ptr: %w", err)
 	}
 	purego.RegisterFunc(&loadModelFunc, loadModelPtr)
 

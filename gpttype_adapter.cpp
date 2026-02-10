@@ -2464,7 +2464,13 @@ ModelLoadResult gpttype_load_model(const load_model_inputs inputs, FileFormat in
         }
         for(int x=0;x<overridekv_max;++x)
         {
-            std::string override_kv = inputs.override_kv[x];
+            // Check for NULL pointer before assigning to std::string
+            const char* kv_ptr = inputs.override_kv[x];
+            if(kv_ptr == nullptr)
+            {
+                continue;
+            }
+            std::string override_kv = kv_ptr;
             if(override_kv != "" && file_format==FileFormat::GGUF_GENERIC)
             {
                 printf("\nAttempting to apply KV override: %s...\n",override_kv.c_str());

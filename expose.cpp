@@ -31,14 +31,14 @@ extern "C"
 
     bool load_model(const load_model_inputs inputs)
     {
-        std::string model = inputs.model_filename;
-        lora_filename = inputs.lora_filename;
-        mmproj_filename = inputs.mmproj_filename;
-        draftmodel_filename = inputs.draftmodel_filename;
+        std::string model = inputs.model_filename ? inputs.model_filename : "";
+        lora_filename = inputs.lora_filename ? inputs.lora_filename : "";
+        mmproj_filename = inputs.mmproj_filename ? inputs.mmproj_filename : "";
+        draftmodel_filename = inputs.draftmodel_filename ? inputs.draftmodel_filename : "";
 
         file_format = check_file_format(model.c_str(),&file_format_meta);
 
-        std::string vulkan_info_raw = inputs.vulkan_info;
+        std::string vulkan_info_raw = inputs.vulkan_info ? inputs.vulkan_info : "";
         std::string vulkan_info_str = "";
         for (size_t i = 0; i < vulkan_info_raw.length(); ++i) {
             vulkan_info_str += vulkan_info_raw[i];
@@ -53,7 +53,7 @@ extern "C"
             putenv((char*)vulkandeviceenv.c_str());
         }
 
-        executable_path = inputs.executable_path;
+        executable_path = inputs.executable_path ? inputs.executable_path : "";
 
         if(file_format==FileFormat::GPTJ_1 || file_format==FileFormat::GPTJ_2 || file_format==FileFormat::GPTJ_3 || file_format==FileFormat::GPTJ_4  || file_format==FileFormat::GPTJ_5)
         {
@@ -204,6 +204,15 @@ extern "C"
         if (inputs && outputs) {
             *outputs = gpttype_generate(*inputs);
         }
+    }
+
+    // Pointer-based version for cross-platform FFI compatibility (Linux/Windows)
+    bool load_model_ptr(const load_model_inputs* inputs)
+    {
+        if (inputs) {
+            return load_model(*inputs);
+        }
+        return false;
     }
 
     bool sd_load_model(const sd_load_model_inputs inputs)

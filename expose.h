@@ -350,6 +350,7 @@ extern "C" {
 #endif
 
 // Llama text generation pointer-based functions for FFI compatibility
+bool load_model_ptr(const load_model_inputs* inputs);
 void generate_ptr(const generation_inputs* inputs, generation_outputs* outputs);
 void token_count_ptr(const char * input, bool addbos, token_count_outputs* output);
 
