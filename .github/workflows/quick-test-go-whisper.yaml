@@ -57,8 +57,8 @@ jobs:
       - name: Run go vet
         working-directory: go
         run: |
-          # Vet main package only
-          go vet .
+          # Vet main package only, skip unsafe.Pointer warnings for FFI code
+          go vet -unsafeptr=false .
           echo "✅ go vet passed"
 
       - name: Check for common issues

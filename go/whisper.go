@@ -200,20 +200,36 @@ func readFileToBase64(filePath string) (string, error) {
 }
 
 // Helper function to convert uintptr to string
+// This mimics C.GoString behavior without CGO
+//
+//nolint:govet // unsafe.Pointer usage is intentional for FFI
 func charPtrToString(ptr uintptr) string {
 	if ptr == 0 {
 		return ""
 	}
 
-	// Read bytes until null terminator
-	var bytes []byte
-	for i := 0; ; i++ {
-		b := *(*byte)(unsafe.Pointer(ptr + uintptr(i)))
+	// Convert to unsafe.Pointer
+	p := unsafe.Pointer(ptr)
+
+	// Find string length
+	length := 0
+	for {
+		// Use unsafe.Add for pointer arithmetic (Go 1.17+)
+		b := *(*byte)(unsafe.Add(p, length))
 		if b == 0 {
 			break
 		}
-		bytes = append(bytes, b)
+		length++
+		// Safety limit
+		if length > 1000000 {
+			return ""
+		}
 	}
 
-	return string(bytes)
+	if length == 0 {
+		return ""
+	}
+
+	// Create byte slice from memory
+	return string(unsafe.Slice((*byte)(p), length))
 }
