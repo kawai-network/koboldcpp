@@ -209,7 +209,9 @@ jobs:
         with:
           version: latest
           working-directory: go
-          args: --timeout=5m --exclude-dirs=examples
+          args: --timeout=5m
+          skip-pkg-cache: true
+          skip-build-cache: true
 
       - name: Run go vet
         working-directory: go
