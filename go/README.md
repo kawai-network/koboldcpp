@@ -5,8 +5,8 @@ Go bindings for KoboldCpp using [purego](https://github.com/ebitengine/purego) f
 ## Features
 
 - ✅ **Whisper Speech-to-Text** - Transcribe audio to text
+- ✅ **Stable Diffusion Image Generation** - Generate images from text prompts
 - 🚧 Text Generation (GGUF models) - Coming soon
-- 🚧 Image Generation (Stable Diffusion) - Coming soon
 - 🚧 Text-to-Speech - Coming soon
 - 🚧 Text Embeddings - Coming soon
 
@@ -343,3 +343,226 @@ Contributions are welcome! Please submit issues and pull requests on GitHub.
 - [KoboldCpp](https://github.com/LostRuins/koboldcpp)
 - [Whisper Models](https://huggingface.co/koboldcpp/whisper)
 - [Purego](https://github.com/ebitengine/purego)
+
+
+## Stable Diffusion Image Generation
+
+### Text-to-Image
+
+```go
+package main
+
+import (
+    "fmt"
+    "log"
+    
+    "github.com/kawai-network/koboldcpp"
+)
+
+func main() {
+    kcpp := koboldcpp.New()
+    
+    // Load library
+    err := kcpp.LoadLibrary(koboldcpp.LibDefault, ".")
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer kcpp.Close()
+    
+    // Load Stable Diffusion model
+    err = kcpp.LoadSDModel(koboldcpp.SDLoadModelInputs{
+        ModelFilename:  "models/sd_v1.5.gguf",
+        ExecutablePath: ".",
+        Threads:        4,
+    })
+    if err != nil {
+        log.Fatal(err)
+    }
+    
+    // Generate image
+    result, err := kcpp.SDGenerate(koboldcpp.SDGenerationInputs{
+        Prompt:       "a beautiful sunset over mountains, highly detailed",
+        NegativePrompt: "blurry, low quality",
+        Width:        512,
+        Height:       512,
+        SampleSteps:  20,
+        CFGScale:     7.0,
+        Seed:         -1, // Random seed
+        SampleMethod: "euler_a",
+    })
+    if err != nil {
+        log.Fatal(err)
+    }
+    
+    // Save image
+    err = koboldcpp.SaveImageToFile(result.Data, "output.png")
+    if err != nil {
+        log.Fatal(err)
+    }
+    
+    fmt.Println("Image generated successfully!")
+}
+```
+
+### Image-to-Image (img2img)
+
+```go
+// Generate from existing image
+result, err := kcpp.SDGenerateFromFile(
+    "enhance this image, make it more vibrant",
+    "input.png",
+    koboldcpp.SDGenerationInputs{
+        Width:             512,
+        Height:            512,
+        SampleSteps:       20,
+        CFGScale:          7.0,
+        DenoisingStrength: 0.75, // How much to change (0.0-1.0)
+        Seed:              -1,
+        SampleMethod:      "euler_a",
+    },
+)
+```
+
+### Image Upscaling
+
+```go
+// Upscale an image
+result, err := kcpp.SDUpscale(koboldcpp.SDUpscaleInputs{
+    InitImages:      base64EncodedImage,
+    UpscalingResize: 2, // 2x upscale
+})
+```
+
+### Advanced Options
+
+```go
+err = kcpp.LoadSDModel(koboldcpp.SDLoadModelInputs{
+    ModelFilename:       "models/sd_v1.5.gguf",
+    ExecutablePath:      ".",
+    Threads:             4,
+    Quant:               0,
+    FlashAttention:      true,
+    OffloadCPU:          false,
+    VAECPU:              false,
+    ClipCPU:             false,
+    TAESD:               false,
+    TiledVAEThreshold:   0,
+    // Optional component models
+    T5XXLFilename:       "",
+    Clip1Filename:       "",
+    Clip2Filename:       "",
+    VAEFilename:         "",
+    // LoRA support
+    LoraFilename:        "models/lora.safetensors",
+    LoraMultiplier:      1.0,
+    LoraApplyMode:       0,
+    // Upscaler
+    UpscalerFilename:    "models/upscaler.pth",
+    // Image limits
+    ImgHardLimit:        2048,
+    ImgSoftLimit:        1024,
+    Quiet:               false,
+})
+```
+
+### Generation Parameters
+
+```go
+result, err := kcpp.SDGenerate(koboldcpp.SDGenerationInputs{
+    Prompt:            "your prompt here",
+    NegativePrompt:    "things to avoid",
+    InitImages:        "", // Base64 encoded init image for img2img
+    Mask:              "", // Base64 encoded mask for inpainting
+    ExtraImages:       []string{}, // Additional control images
+    FlipMask:          false,
+    DenoisingStrength: 0.75, // For img2img (0.0-1.0)
+    CFGScale:          7.0,  // Classifier-free guidance scale
+    DistilledGuidance: -1.0,
+    ShiftedTimestep:   0,
+    SampleSteps:       20,
+    Width:             512,
+    Height:            512,
+    Seed:              -1, // -1 for random
+    SampleMethod:      "euler_a", // euler, euler_a, heun, dpm2, etc.
+    Scheduler:         "",
+    ClipSkip:          -1,
+    VidReqFrames:      1,    // For video generation
+    VideoOutputType:   0,    // 0=gif, 1=avi, 2=both
+    RemoveLimits:      false,
+    CircularX:         false, // Tileable texture
+    CircularY:         false,
+    Upscale:           false,
+})
+```
+
+## API Reference
+
+### Stable Diffusion Types
+
+#### SDLoadModelInputs
+Parameters for loading a Stable Diffusion model.
+
+#### SDGenerationInputs
+Parameters for generating images.
+
+#### SDGenerationOutputs
+Output from image generation containing:
+- `Status`: Generation status (1 = success)
+- `Animated`: Whether output is animated (GIF/video)
+- `Data`: Base64 encoded image data
+- `DataExtra`: Additional data (for animated outputs)
+
+#### SDUpscaleInputs
+Parameters for upscaling images.
+
+#### SDInfoOutputs
+Information about the loaded model.
+
+### Stable Diffusion Methods
+
+#### LoadSDModel(inputs SDLoadModelInputs) error
+Load a Stable Diffusion model.
+
+#### SDGenerate(inputs SDGenerationInputs) (*SDGenerationOutputs, error)
+Generate images from text prompts.
+
+#### SDGenerateFromFile(prompt, initImagePath string, params SDGenerationInputs) (*SDGenerationOutputs, error)
+Convenience method for img2img from file.
+
+#### SDUpscale(inputs SDUpscaleInputs) (*SDGenerationOutputs, error)
+Upscale images using the loaded upscaler model.
+
+#### SDGetInfo() (*SDInfoOutputs, error)
+Get information about the loaded SD model.
+
+### Helper Functions
+
+#### SaveImageToFile(base64Data, outputPath string) error
+Save a base64 encoded image to a file.
+
+## Examples
+
+See the `examples/` directory for complete working examples:
+- `whisper_example.go` - Whisper speech-to-text
+- `simple_whisper.go` - Simple Whisper usage
+- `sd_example.go` - Stable Diffusion text-to-image
+- `sd_img2img_example.go` - Stable Diffusion image-to-image
+
+## Building Examples
+
+```bash
+cd examples
+go build -o whisper_example whisper_example.go
+go build -o sd_example sd_example.go
+go build -o sd_img2img_example sd_img2img_example.go
+```
+
+## Platform Support
+
+- ✅ Linux (x86_64, ARM64)
+- ✅ macOS (Intel, Apple Silicon)
+- ✅ Windows (x86_64)
+
+## License
+
+This project follows the same license as KoboldCpp.
