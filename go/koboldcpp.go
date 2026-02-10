@@ -116,11 +116,8 @@ func getLibraryName(variant LibraryVariant) string {
 
 // stringToCharPtr converts a Go string to a C char pointer (uintptr)
 func stringToCharPtr(s string) uintptr {
-	if s == "" {
-		return 0
-	}
-
-	// Allocate memory for the string + null terminator
+	// Always allocate memory, even for empty strings
+	// C++ std::string constructor doesn't accept null pointers
 	bytes := []byte(s)
 	bytes = append(bytes, 0) // null terminator
 
