@@ -420,10 +420,10 @@ jobs:
                   ModelFilename:  modelPath,
                   ExecutablePath: "..",
                   Threads:        4,
-                  Quiet:          true,
+                  Quiet:          false, // Enable logging to see error details
               })
               if err != nil {
-                  t.Skipf("Failed to load SD model (may be incomplete download or unsupported format): %v", err)
+                  t.Fatalf("Failed to load SD model: %v", err)
               }
 
               // Generate a simple image
