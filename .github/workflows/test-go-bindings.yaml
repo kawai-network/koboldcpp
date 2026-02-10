@@ -247,7 +247,7 @@ jobs:
               t.Log("Loading Llama model...")
               if err := kcpp.LoadModel(LoadModelInputs{
                   ModelFilename: modelPath,
-                  ContextSize: 512,
+                  MaxContextLength: 512,
                   GPULayers: 0,
                   Threads: 4,
                   Quiet: false,
@@ -481,7 +481,7 @@ jobs:
               t.Log("Loading Llama model...")
               if err := kcpp.LoadModel(LoadModelInputs{
                   ModelFilename: modelPath,
-                  ContextSize: 512,
+                  MaxContextLength: 512,
                   GPULayers: 0,
                   Threads: 4,
                   Quiet: false,
@@ -729,7 +729,7 @@ jobs:
               t.Log("Loading Llama model...")
               if err := kcpp.LoadModel(LoadModelInputs{
                   ModelFilename: modelPath,
-                  ContextSize: 512,
+                  MaxContextLength: 512,
                   GPULayers: 0,
                   Threads: 4,
                   Quiet: false,
