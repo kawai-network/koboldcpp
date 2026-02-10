@@ -106,10 +106,7 @@ func getLibraryName(variant LibraryVariant) string {
 	case "windows":
 		prefix = "koboldcpp_"
 		suffix = ".dll"
-	case "darwin":
-		prefix = "libkoboldcpp_"
-		suffix = ".dylib"
-	default: // linux and others
+	default: // linux, darwin, and others - Makefile builds .so on all Unix platforms
 		prefix = "koboldcpp_"
 		suffix = ".so"
 	}
