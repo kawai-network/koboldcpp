@@ -51,17 +51,33 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential ffmpeg
 
-      - name: Build KoboldCpp library (CPU only)
+      - name: Build KoboldCpp library (CPU only with SD support)
         run: |
-          # Build only the default CPU library for testing
-          make koboldcpp_default LLAMA_PORTABLE=1
+          # Build with SD support for testing
+          make koboldcpp_default LLAMA_PORTABLE=1 LLAMA_SD=1
           ls -lh *.so
 
-      - name: Download Whisper test model
+      - name: Download test models
         run: |
           mkdir -p models
-          # Download tiny model for fast testing
+          # Download Whisper tiny model for fast testing
           wget -q https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin -O models/whisper-tiny.bin
+          # Download SD model (SDXS-512-0.9) with retry logic
+          curl -L --retry 3 --retry-delay 5 \
+            -o models/sdxs-512.safetensors \
+            https://huggingface.co/IDKiro/sdxs-512-0.9/resolve/main/sdxs-512-0.9.safetensors || {
+            echo "SD model download failed"
+            rm -f models/sdxs-512.safetensors
+          }
+          # Verify SD model file size (should be ~600MB)
+          if [ -f models/sdxs-512.safetensors ]; then
+            FILE_SIZE=$(stat -c%s models/sdxs-512.safetensors 2>/dev/null || stat -f%z models/sdxs-512.safetensors 2>/dev/null || echo 0)
+            echo "SD model file size: $FILE_SIZE bytes"
+            if [ "$FILE_SIZE" -lt 1000000 ]; then
+              echo "SD model too small, download likely failed"
+              rm -f models/sdxs-512.safetensors
+            fi
+          fi
           ls -lh models/
 
       - name: Generate test audio
@@ -98,12 +114,13 @@ jobs:
           go build -v -o examples/llama_example ./examples/llama_example.go
           ls -lh examples/
 
-      - name: Run Whisper integration test
+      - name: Run integration tests
         working-directory: go
         run: |
-          cat > whisper_integration_test.go << 'EOF'
+          cat > integration_test.go << 'EOF'
           package koboldcpp
-          import ("testing")
+          import ("os"; "testing")
+          
           func TestWhisperIntegration(t *testing.T) {
               kcpp := New()
               if err := kcpp.LoadLibrary(LibDefault, ".."); err != nil {
@@ -126,8 +143,59 @@ jobs:
                   t.Errorf("Expected status 1, got %d", result.Status)
               }
           }
+          
+          func TestSDIntegration(t *testing.T) {
+              kcpp := New()
+              if err := kcpp.LoadLibrary(LibDefault, ".."); err != nil {
+                  t.Fatalf("Failed to load library: %v", err)
+              }
+              defer kcpp.Close()
+              
+              modelPath := "../models/sdxs-512.safetensors"
+              fileInfo, err := os.Stat(modelPath)
+              if os.IsNotExist(err) {
+                  t.Skip("SD model not available, skipping test")
+              }
+              if err != nil {
+                  t.Skipf("Cannot stat model file: %v", err)
+              }
+              if fileInfo.Size() < 1000000 {
+                  t.Skipf("Model file too small (%d bytes), download failed", fileInfo.Size())
+              }
+              
+              t.Log("Loading SD model...")
+              if err := kcpp.LoadSDModel(SDLoadModelInputs{
+                  ModelFilename: modelPath,
+                  ExecutablePath: "..",
+                  Threads: 4,
+                  Quiet: false,
+              }); err != nil {
+                  t.Fatalf("Failed to load SD model: %v", err)
+              }
+              
+              t.Log("Generating test image...")
+              result, err := kcpp.SDGenerate(SDGenerationInputs{
+                  Prompt: "a simple red circle",
+                  Width: 512,
+                  Height: 512,
+                  SampleSteps: 1,
+                  Seed: 42,
+                  CFGScale: 1.0,
+              })
+              if err != nil {
+                  t.Fatalf("SD generation failed: %v", err)
+              }
+              
+              t.Logf("SD generation status: %d, data length: %d bytes", result.Status, len(result.Data))
+              if result.Status != 1 {
+                  t.Errorf("Expected status 1, got %d", result.Status)
+              }
+              if len(result.Data) == 0 {
+                  t.Error("Generated image data is empty")
+              }
+          }
           EOF
-          go test -v -run TestWhisperIntegration
+          go test -v -run "TestWhisperIntegration|TestSDIntegration" -timeout 10m
 
   test-go-bindings-macos:
     name: Test Go Bindings (macOS)
@@ -147,16 +215,33 @@ jobs:
         run: |
           brew install ffmpeg
 
-      - name: Build KoboldCpp library (CPU only)
+      - name: Build KoboldCpp library (CPU only with SD support)
         run: |
-          # Build only the default CPU library for testing
-          make koboldcpp_default LLAMA_PORTABLE=1
+          # Build with SD support for testing
+          make koboldcpp_default LLAMA_PORTABLE=1 LLAMA_SD=1
           ls -lh *.so *.dylib || true
 
-      - name: Download Whisper test model
+      - name: Download test models
         run: |
           mkdir -p models
+          # Download Whisper tiny model
           wget -q https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin -O models/whisper-tiny.bin
+          # Download SD model with retry logic
+          curl -L --retry 3 --retry-delay 5 \
+            -o models/sdxs-512.safetensors \
+            https://huggingface.co/IDKiro/sdxs-512-0.9/resolve/main/sdxs-512-0.9.safetensors || {
+            echo "SD model download failed"
+            rm -f models/sdxs-512.safetensors
+          }
+          # Verify SD model file size
+          if [ -f models/sdxs-512.safetensors ]; then
+            FILE_SIZE=$(stat -f%z models/sdxs-512.safetensors 2>/dev/null || echo 0)
+            echo "SD model file size: $FILE_SIZE bytes"
+            if [ "$FILE_SIZE" -lt 1000000 ]; then
+              echo "SD model too small, download likely failed"
+              rm -f models/sdxs-512.safetensors
+            fi
+          fi
           ls -lh models/
 
       - name: Generate test audio
@@ -185,12 +270,13 @@ jobs:
           go build -v -o examples/llama_example ./examples/llama_example.go
           ls -lh examples/
 
-      - name: Run Whisper integration test
+      - name: Run integration tests
         working-directory: go
         run: |
-          cat > whisper_integration_test.go << 'EOF'
+          cat > integration_test.go << 'EOF'
           package koboldcpp
-          import ("testing")
+          import ("os"; "testing")
+          
           func TestWhisperIntegration(t *testing.T) {
               kcpp := New()
               if err := kcpp.LoadLibrary(LibDefault, ".."); err != nil {
@@ -213,8 +299,59 @@ jobs:
                   t.Errorf("Expected status 1, got %d", result.Status)
               }
           }
+          
+          func TestSDIntegration(t *testing.T) {
+              kcpp := New()
+              if err := kcpp.LoadLibrary(LibDefault, ".."); err != nil {
+                  t.Fatalf("Failed to load library: %v", err)
+              }
+              defer kcpp.Close()
+              
+              modelPath := "../models/sdxs-512.safetensors"
+              fileInfo, err := os.Stat(modelPath)
+              if os.IsNotExist(err) {
+                  t.Skip("SD model not available, skipping test")
+              }
+              if err != nil {
+                  t.Skipf("Cannot stat model file: %v", err)
+              }
+              if fileInfo.Size() < 1000000 {
+                  t.Skipf("Model file too small (%d bytes), download failed", fileInfo.Size())
+              }
+              
+              t.Log("Loading SD model...")
+              if err := kcpp.LoadSDModel(SDLoadModelInputs{
+                  ModelFilename: modelPath,
+                  ExecutablePath: "..",
+                  Threads: 4,
+                  Quiet: false,
+              }); err != nil {
+                  t.Fatalf("Failed to load SD model: %v", err)
+              }
+              
+              t.Log("Generating test image...")
+              result, err := kcpp.SDGenerate(SDGenerationInputs{
+                  Prompt: "a simple red circle",
+                  Width: 512,
+                  Height: 512,
+                  SampleSteps: 1,
+                  Seed: 42,
+                  CFGScale: 1.0,
+              })
+              if err != nil {
+                  t.Fatalf("SD generation failed: %v", err)
+              }
+              
+              t.Logf("SD generation status: %d, data length: %d bytes", result.Status, len(result.Data))
+              if result.Status != 1 {
+                  t.Errorf("Expected status 1, got %d", result.Status)
+              }
+              if len(result.Data) == 0 {
+                  t.Error("Generated image data is empty")
+              }
+          }
           EOF
-          go test -v -run TestWhisperIntegration
+          go test -v -run "TestWhisperIntegration|TestSDIntegration" -timeout 10m
 
   test-go-bindings-windows:
     name: Test Go Bindings (Windows)
@@ -242,18 +379,35 @@ jobs:
           choco install ffmpeg -y
         shell: pwsh
 
-      - name: Build KoboldCpp library (CPU only)
+      - name: Build KoboldCpp library (CPU only with SD support)
         shell: bash
         run: |
-          # Build only the default CPU library for testing
-          make koboldcpp_default LLAMA_PORTABLE=1
+          # Build with SD support for testing
+          make koboldcpp_default LLAMA_PORTABLE=1 LLAMA_SD=1
           ls -lh *.dll
 
-      - name: Download Whisper test model
+      - name: Download test models
         shell: bash
         run: |
           mkdir -p models
+          # Download Whisper tiny model
           curl -L -o models/whisper-tiny.bin https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin
+          # Download SD model with retry logic
+          curl -L --retry 3 --retry-delay 5 \
+            -o models/sdxs-512.safetensors \
+            https://huggingface.co/IDKiro/sdxs-512-0.9/resolve/main/sdxs-512-0.9.safetensors || {
+            echo "SD model download failed"
+            rm -f models/sdxs-512.safetensors
+          }
+          # Verify SD model file size
+          if [ -f models/sdxs-512.safetensors ]; then
+            FILE_SIZE=$(stat -c%s models/sdxs-512.safetensors 2>/dev/null || echo 0)
+            echo "SD model file size: $FILE_SIZE bytes"
+            if [ "$FILE_SIZE" -lt 1000000 ]; then
+              echo "SD model too small, download likely failed"
+              rm -f models/sdxs-512.safetensors
+            fi
+          fi
           ls -lh models/
 
       - name: Generate test audio
@@ -285,13 +439,14 @@ jobs:
           go build -v -o examples/llama_example.exe ./examples/llama_example.go
           ls -lh examples/
 
-      - name: Run Whisper integration test
+      - name: Run integration tests
         working-directory: go
         shell: bash
         run: |
-          cat > whisper_integration_test.go << 'EOF'
+          cat > integration_test.go << 'EOF'
           package koboldcpp
-          import ("testing")
+          import ("os"; "testing")
+          
           func TestWhisperIntegration(t *testing.T) {
               kcpp := New()
               if err := kcpp.LoadLibrary(LibDefault, ".."); err != nil {
@@ -314,8 +469,59 @@ jobs:
                   t.Errorf("Expected status 1, got %d", result.Status)
               }
           }
+          
+          func TestSDIntegration(t *testing.T) {
+              kcpp := New()
+              if err := kcpp.LoadLibrary(LibDefault, ".."); err != nil {
+                  t.Fatalf("Failed to load library: %v", err)
+              }
+              defer kcpp.Close()
+              
+              modelPath := "../models/sdxs-512.safetensors"
+              fileInfo, err := os.Stat(modelPath)
+              if os.IsNotExist(err) {
+                  t.Skip("SD model not available, skipping test")
+              }
+              if err != nil {
+                  t.Skipf("Cannot stat model file: %v", err)
+              }
+              if fileInfo.Size() < 1000000 {
+                  t.Skipf("Model file too small (%d bytes), download failed", fileInfo.Size())
+              }
+              
+              t.Log("Loading SD model...")
+              if err := kcpp.LoadSDModel(SDLoadModelInputs{
+                  ModelFilename: modelPath,
+                  ExecutablePath: "..",
+                  Threads: 4,
+                  Quiet: false,
+              }); err != nil {
+                  t.Fatalf("Failed to load SD model: %v", err)
+              }
+              
+              t.Log("Generating test image...")
+              result, err := kcpp.SDGenerate(SDGenerationInputs{
+                  Prompt: "a simple red circle",
+                  Width: 512,
+                  Height: 512,
+                  SampleSteps: 1,
+                  Seed: 42,
+                  CFGScale: 1.0,
+              })
+              if err != nil {
+                  t.Fatalf("SD generation failed: %v", err)
+              }
+              
+              t.Logf("SD generation status: %d, data length: %d bytes", result.Status, len(result.Data))
+              if result.Status != 1 {
+                  t.Errorf("Expected status 1, got %d", result.Status)
+              }
+              if len(result.Data) == 0 {
+                  t.Error("Generated image data is empty")
+              }
+          }
           EOF
-          go test -v -run TestWhisperIntegration
+          go test -v -run "TestWhisperIntegration|TestSDIntegration" -timeout 10m
 
   lint-go-code:
     name: Lint Go Code
@@ -348,157 +554,6 @@ jobs:
               exit 1
             fi
           fi
-
-  integration-test-sd:
-    name: Integration Test - Stable Diffusion
-    runs-on: ubuntu-22.04
-    needs: [test-go-bindings-linux]
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.25.5'
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential
-
-      - name: Build KoboldCpp library with SD support
-        run: |
-          # Build with SD support (CPU only for testing)
-          make koboldcpp_default LLAMA_PORTABLE=1 LLAMA_SD=1
-          ls -lh *.so
-
-      - name: Download SD model (tiny for testing)
-        run: |
-          mkdir -p models
-          # Download a very small SD model for testing (SDXS-512-0.9)
-          # Use curl with retry logic and follow redirects
-          curl -L --retry 3 --retry-delay 5 \
-            -o models/sdxs-512.safetensors \
-            https://huggingface.co/IDKiro/sdxs-512-0.9/resolve/main/sdxs-512-0.9.safetensors || {
-            echo "Model download failed"
-            rm -f models/sdxs-512.safetensors
-          }
-          # Verify file size (should be ~600MB)
-          if [ -f models/sdxs-512.safetensors ]; then
-            FILE_SIZE=$(stat -c%s models/sdxs-512.safetensors 2>/dev/null || stat -f%z models/sdxs-512.safetensors 2>/dev/null || echo 0)
-            echo "Downloaded file size: $FILE_SIZE bytes"
-            if [ "$FILE_SIZE" -lt 1000000 ]; then
-              echo "File too small, download likely failed"
-              rm -f models/sdxs-512.safetensors
-            fi
-          fi
-          ls -lh models/ || true
-
-      - name: Test SD bindings availability
-        working-directory: go
-        run: |
-          cat > sd_integration_test.go << 'EOF'
-          package koboldcpp
-
-          import (
-              "os"
-              "testing"
-          )
-
-          func TestSDIntegration(t *testing.T) {
-              kcpp := New()
-              err := kcpp.LoadLibrary(LibDefault, "..")
-              if err != nil {
-                  t.Fatalf("Failed to load library: %v", err)
-              }
-              defer kcpp.Close()
-
-              // Check if model exists and has valid size
-              modelPath := "../models/sdxs-512.safetensors"
-              fileInfo, err := os.Stat(modelPath)
-              if os.IsNotExist(err) {
-                  t.Skip("SD model not available, skipping generation test")
-              }
-              if err != nil {
-                  t.Skipf("Cannot stat model file: %v", err)
-              }
-              // Model should be at least 1MB (actual size is ~600MB)
-              if fileInfo.Size() < 1000000 {
-                  t.Skipf("Model file too small (%d bytes), download likely failed", fileInfo.Size())
-              }
-
-              // Try to get SD info first to check if SD is available
-              t.Log("Checking SD availability...")
-              info, err := kcpp.SDGetInfo()
-              if err != nil {
-                  t.Skipf("SD functions not available (library may not be built with SD support): %v", err)
-              }
-              t.Logf("SD info status: %d", info.Status)
-
-              // Load SD model
-              t.Log("Loading SD model...")
-              err = kcpp.LoadSDModel(SDLoadModelInputs{
-                  ModelFilename:  modelPath,
-                  ExecutablePath: "..",
-                  Threads:        4,
-                  Quiet:          false, // Enable logging to see error details
-              })
-              if err != nil {
-                  t.Fatalf("Failed to load SD model: %v", err)
-              }
-
-              // Generate a simple image
-              t.Log("Generating test image...")
-              result, err := kcpp.SDGenerate(SDGenerationInputs{
-                  Prompt:      "a simple red circle",
-                  Width:       512,
-                  Height:      512,
-                  SampleSteps: 1,
-                  Seed:        42,
-                  CFGScale:    1.0,
-              })
-              if err != nil {
-                  t.Fatalf("SD generation failed: %v", err)
-              }
-
-              t.Logf("SD generation status: %d", result.Status)
-              t.Logf("Generated image data length: %d bytes", len(result.Data))
-              
-              if result.Status != 1 {
-                  t.Errorf("Expected status 1, got %d", result.Status)
-              }
-              
-              if len(result.Data) == 0 {
-                  t.Error("Generated image data is empty")
-              }
-
-              t.Log("SD integration test completed successfully")
-          }
-          EOF
-          go test -v -run TestSDIntegration -timeout 10m
-
-      - name: Verify Go module for examples
-        working-directory: go
-        run: |
-          go mod download
-          go mod verify
-
-      - name: Build SD examples
-        working-directory: go
-        run: |
-          # Build SD examples to verify they compile (from parent directory)
-          go build -v -o examples/sd_example ./examples/sd_example.go
-          go build -v -o examples/sd_img2img_example ./examples/sd_img2img_example.go
-          ls -lh examples/sd_*
-
-      - name: Test SD example help output
-        working-directory: go/examples
-        run: |
-          # Test that examples show usage info
-          ./sd_example || echo "SD example shows usage information"
-          ./sd_img2img_example || echo "SD img2img example shows usage information"
 
   benchmark:
     name: Benchmark Go Bindings
