@@ -376,6 +376,12 @@ jobs:
           EOF
           go test -v -run TestSDBindingsAvailable
 
+      - name: Verify Go module for examples
+        working-directory: go
+        run: |
+          go mod download
+          go mod verify
+
       - name: Build SD examples
         working-directory: go/examples
         run: |
