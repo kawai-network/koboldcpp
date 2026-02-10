@@ -36,20 +36,20 @@ type WhisperGenerationOutputs struct {
 
 // C struct representations for purego
 type cWhisperLoadModelInputs struct {
-	modelFilename   uintptr // const char*
-	executablePath  uintptr // const char*
-	mainGPU         int32
-	vulkanInfo      uintptr // const char*
-	devicesOverride uintptr // const char*
-	quiet           bool
-	debugMode       int32
+	model_filename   uintptr // const char*
+	executable_path  uintptr // const char*
+	kcpp_main_gpu    int32
+	vulkan_info      uintptr // const char*
+	devices_override uintptr // const char*
+	quiet            bool
+	debugmode        int32
 }
 
 type cWhisperGenerationInputs struct {
-	prompt            uintptr // const char*
-	audioData         uintptr // const char*
-	suppressNonSpeech bool
-	langCode          uintptr // const char*
+	prompt              uintptr // const char*
+	audio_data          uintptr // const char*
+	suppress_non_speech bool
+	langcode            uintptr // const char*
 }
 
 type cWhisperGenerationOutputs struct {
@@ -104,13 +104,13 @@ func (k *KoboldCpp) LoadWhisperModel(inputs WhisperLoadModelInputs) error {
 	devicesOverrideBytes := append([]byte(inputs.DevicesOverride), 0)
 
 	cInputs := cWhisperLoadModelInputs{
-		modelFilename:   uintptr(unsafe.Pointer(&modelFilenameBytes[0])),
-		executablePath:  uintptr(unsafe.Pointer(&executablePathBytes[0])),
-		mainGPU:         inputs.MainGPU,
-		vulkanInfo:      uintptr(unsafe.Pointer(&vulkanInfoBytes[0])),
-		devicesOverride: uintptr(unsafe.Pointer(&devicesOverrideBytes[0])),
-		quiet:           inputs.Quiet,
-		debugMode:       inputs.DebugMode,
+		model_filename:   uintptr(unsafe.Pointer(&modelFilenameBytes[0])),
+		executable_path:  uintptr(unsafe.Pointer(&executablePathBytes[0])),
+		kcpp_main_gpu:    inputs.MainGPU,
+		vulkan_info:      uintptr(unsafe.Pointer(&vulkanInfoBytes[0])),
+		devices_override: uintptr(unsafe.Pointer(&devicesOverrideBytes[0])),
+		quiet:            inputs.Quiet,
+		debugmode:        inputs.DebugMode,
 	}
 
 	success := whisperLoadModelPtr(&cInputs)
@@ -141,10 +141,10 @@ func (k *KoboldCpp) WhisperTranscribe(inputs WhisperGenerationInputs) (*WhisperG
 	langCodeBytes := append([]byte(inputs.LanguageCode), 0)
 
 	cInputs := cWhisperGenerationInputs{
-		prompt:            uintptr(unsafe.Pointer(&promptBytes[0])),
-		audioData:         uintptr(unsafe.Pointer(&audioDataBytes[0])),
-		suppressNonSpeech: inputs.SuppressNonSpeech,
-		langCode:          uintptr(unsafe.Pointer(&langCodeBytes[0])),
+		prompt:              uintptr(unsafe.Pointer(&promptBytes[0])),
+		audio_data:          uintptr(unsafe.Pointer(&audioDataBytes[0])),
+		suppress_non_speech: inputs.SuppressNonSpeech,
+		langcode:            uintptr(unsafe.Pointer(&langCodeBytes[0])),
 	}
 
 	var cOutputs cWhisperGenerationOutputs

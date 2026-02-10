@@ -90,73 +90,73 @@ type SDInfoOutputs struct {
 
 // C struct definitions matching expose.h
 type cSDLoadModelInputs struct {
-	modelFilename       uintptr
-	executablePath      uintptr
-	mainGPU             int32
-	vulkanInfo          uintptr
-	threads             int32
-	quant               int32
-	flashAttention      bool
-	offloadCPU          bool
-	vaeCPU              bool
-	clipCPU             bool
-	diffusionConvDirect bool
-	vaeConvDirect       bool
-	taesd               bool
-	tiledVAEThreshold   int32
-	t5xxlFilename       uintptr
-	clip1Filename       uintptr
-	clip2Filename       uintptr
-	vaeFilename         uintptr
-	loraFilename        uintptr
-	loraMultiplier      float32
-	loraApplyMode       int32
-	photomakerFilename  uintptr
-	upscalerFilename    uintptr
-	imgHardLimit        int32
-	imgSoftLimit        int32
-	devicesOverride     uintptr
-	quiet               bool
-	debugMode           int32
+	model_filename        uintptr
+	executable_path       uintptr
+	kcpp_main_gpu         int32
+	vulkan_info           uintptr
+	threads               int32
+	quant                 int32
+	flash_attention       bool
+	offload_cpu           bool
+	vae_cpu               bool
+	clip_cpu              bool
+	diffusion_conv_direct bool
+	vae_conv_direct       bool
+	taesd                 bool
+	tiled_vae_threshold   int32
+	t5xxl_filename        uintptr
+	clip1_filename        uintptr
+	clip2_filename        uintptr
+	vae_filename          uintptr
+	lora_filename         uintptr
+	lora_multiplier       float32
+	lora_apply_mode       int32
+	photomaker_filename   uintptr
+	upscaler_filename     uintptr
+	img_hard_limit        int32
+	img_soft_limit        int32
+	devices_override      uintptr
+	quiet                 bool
+	debugmode             int32
 }
 
 type cSDGenerationInputs struct {
-	prompt            uintptr
-	negativePrompt    uintptr
-	initImages        uintptr
-	mask              uintptr
-	extraImagesLen    int32
-	extraImages       uintptr
-	flipMask          bool
-	denoisingStrength float32
-	cfgScale          float32
-	distilledGuidance float32
-	shiftedTimestep   int32
-	sampleSteps       int32
-	width             int32
-	height            int32
-	seed              int32
-	sampleMethod      uintptr
-	scheduler         uintptr
-	clipSkip          int32
-	vidReqFrames      int32
-	videoOutputType   int32
-	removeLimits      bool
-	circularX         bool
-	circularY         bool
-	upscale           bool
+	prompt             uintptr
+	negative_prompt    uintptr
+	init_images        uintptr
+	mask               uintptr
+	extra_images_len   int32
+	extra_images       uintptr
+	flip_mask          bool
+	denoising_strength float32
+	cfg_scale          float32
+	distilled_guidance float32
+	shifted_timestep   int32
+	sample_steps       int32
+	width              int32
+	height             int32
+	seed               int32
+	sample_method      uintptr
+	scheduler          uintptr
+	clip_skip          int32
+	vid_req_frames     int32
+	video_output_type  int32
+	remove_limits      bool
+	circular_x         bool
+	circular_y         bool
+	upscale            bool
 }
 
 type cSDGenerationOutputs struct {
-	status    int32
-	animated  int32
-	data      uintptr
-	dataExtra uintptr
+	status     int32
+	animated   int32
+	data       uintptr
+	data_extra uintptr
 }
 
 type cSDUpscaleInputs struct {
-	initImages      uintptr
-	upscalingResize int32
+	init_images      uintptr
+	upscaling_resize int32
 }
 
 type cSDInfoOutputs struct {
@@ -224,34 +224,34 @@ func (k *KoboldCpp) LoadSDModel(inputs SDLoadModelInputs) error {
 	devicesOverrideBytes := append([]byte(inputs.DevicesOverride), 0)
 
 	cInputs := cSDLoadModelInputs{
-		modelFilename:       uintptr(unsafe.Pointer(&modelFilenameBytes[0])),
-		executablePath:      uintptr(unsafe.Pointer(&executablePathBytes[0])),
-		mainGPU:             int32(inputs.MainGPU),
-		vulkanInfo:          uintptr(unsafe.Pointer(&vulkanInfoBytes[0])),
-		threads:             int32(inputs.Threads),
-		quant:               int32(inputs.Quant),
-		flashAttention:      inputs.FlashAttention,
-		offloadCPU:          inputs.OffloadCPU,
-		vaeCPU:              inputs.VAECPU,
-		clipCPU:             inputs.ClipCPU,
-		diffusionConvDirect: inputs.DiffusionConvDirect,
-		vaeConvDirect:       inputs.VAEConvDirect,
-		taesd:               inputs.TAESD,
-		tiledVAEThreshold:   int32(inputs.TiledVAEThreshold),
-		t5xxlFilename:       uintptr(unsafe.Pointer(&t5xxlFilenameBytes[0])),
-		clip1Filename:       uintptr(unsafe.Pointer(&clip1FilenameBytes[0])),
-		clip2Filename:       uintptr(unsafe.Pointer(&clip2FilenameBytes[0])),
-		vaeFilename:         uintptr(unsafe.Pointer(&vaeFilenameBytes[0])),
-		loraFilename:        uintptr(unsafe.Pointer(&loraFilenameBytes[0])),
-		loraMultiplier:      inputs.LoraMultiplier,
-		loraApplyMode:       int32(inputs.LoraApplyMode),
-		photomakerFilename:  uintptr(unsafe.Pointer(&photomakerFilenameBytes[0])),
-		upscalerFilename:    uintptr(unsafe.Pointer(&upscalerFilenameBytes[0])),
-		imgHardLimit:        int32(inputs.ImgHardLimit),
-		imgSoftLimit:        int32(inputs.ImgSoftLimit),
-		devicesOverride:     uintptr(unsafe.Pointer(&devicesOverrideBytes[0])),
-		quiet:               inputs.Quiet,
-		debugMode:           int32(inputs.DebugMode),
+		model_filename:        uintptr(unsafe.Pointer(&modelFilenameBytes[0])),
+		executable_path:       uintptr(unsafe.Pointer(&executablePathBytes[0])),
+		kcpp_main_gpu:         int32(inputs.MainGPU),
+		vulkan_info:           uintptr(unsafe.Pointer(&vulkanInfoBytes[0])),
+		threads:               int32(inputs.Threads),
+		quant:                 int32(inputs.Quant),
+		flash_attention:       inputs.FlashAttention,
+		offload_cpu:           inputs.OffloadCPU,
+		vae_cpu:               inputs.VAECPU,
+		clip_cpu:              inputs.ClipCPU,
+		diffusion_conv_direct: inputs.DiffusionConvDirect,
+		vae_conv_direct:       inputs.VAEConvDirect,
+		taesd:                 inputs.TAESD,
+		tiled_vae_threshold:   int32(inputs.TiledVAEThreshold),
+		t5xxl_filename:        uintptr(unsafe.Pointer(&t5xxlFilenameBytes[0])),
+		clip1_filename:        uintptr(unsafe.Pointer(&clip1FilenameBytes[0])),
+		clip2_filename:        uintptr(unsafe.Pointer(&clip2FilenameBytes[0])),
+		vae_filename:          uintptr(unsafe.Pointer(&vaeFilenameBytes[0])),
+		lora_filename:         uintptr(unsafe.Pointer(&loraFilenameBytes[0])),
+		lora_multiplier:       inputs.LoraMultiplier,
+		lora_apply_mode:       int32(inputs.LoraApplyMode),
+		photomaker_filename:   uintptr(unsafe.Pointer(&photomakerFilenameBytes[0])),
+		upscaler_filename:     uintptr(unsafe.Pointer(&upscalerFilenameBytes[0])),
+		img_hard_limit:        int32(inputs.ImgHardLimit),
+		img_soft_limit:        int32(inputs.ImgSoftLimit),
+		devices_override:      uintptr(unsafe.Pointer(&devicesOverrideBytes[0])),
+		quiet:                 inputs.Quiet,
+		debugmode:             int32(inputs.DebugMode),
 	}
 
 	success := sdLoadModelPtr(&cInputs)
@@ -304,30 +304,30 @@ func (k *KoboldCpp) SDGenerate(inputs SDGenerationInputs) (*SDGenerationOutputs,
 	}
 
 	cInputs := cSDGenerationInputs{
-		prompt:            uintptr(unsafe.Pointer(&promptBytes[0])),
-		negativePrompt:    uintptr(unsafe.Pointer(&negativePromptBytes[0])),
-		initImages:        uintptr(unsafe.Pointer(&initImagesBytes[0])),
-		mask:              uintptr(unsafe.Pointer(&maskBytes[0])),
-		extraImagesLen:    int32(len(inputs.ExtraImages)),
-		extraImages:       extraImagesPtr,
-		flipMask:          inputs.FlipMask,
-		denoisingStrength: inputs.DenoisingStrength,
-		cfgScale:          inputs.CFGScale,
-		distilledGuidance: inputs.DistilledGuidance,
-		shiftedTimestep:   int32(inputs.ShiftedTimestep),
-		sampleSteps:       int32(inputs.SampleSteps),
-		width:             int32(inputs.Width),
-		height:            int32(inputs.Height),
-		seed:              int32(inputs.Seed),
-		sampleMethod:      uintptr(unsafe.Pointer(&sampleMethodBytes[0])),
-		scheduler:         uintptr(unsafe.Pointer(&schedulerBytes[0])),
-		clipSkip:          int32(inputs.ClipSkip),
-		vidReqFrames:      int32(inputs.VidReqFrames),
-		videoOutputType:   int32(inputs.VideoOutputType),
-		removeLimits:      inputs.RemoveLimits,
-		circularX:         inputs.CircularX,
-		circularY:         inputs.CircularY,
-		upscale:           inputs.Upscale,
+		prompt:             uintptr(unsafe.Pointer(&promptBytes[0])),
+		negative_prompt:    uintptr(unsafe.Pointer(&negativePromptBytes[0])),
+		init_images:        uintptr(unsafe.Pointer(&initImagesBytes[0])),
+		mask:               uintptr(unsafe.Pointer(&maskBytes[0])),
+		extra_images_len:   int32(len(inputs.ExtraImages)),
+		extra_images:       extraImagesPtr,
+		flip_mask:          inputs.FlipMask,
+		denoising_strength: inputs.DenoisingStrength,
+		cfg_scale:          inputs.CFGScale,
+		distilled_guidance: inputs.DistilledGuidance,
+		shifted_timestep:   int32(inputs.ShiftedTimestep),
+		sample_steps:       int32(inputs.SampleSteps),
+		width:              int32(inputs.Width),
+		height:             int32(inputs.Height),
+		seed:               int32(inputs.Seed),
+		sample_method:      uintptr(unsafe.Pointer(&sampleMethodBytes[0])),
+		scheduler:          uintptr(unsafe.Pointer(&schedulerBytes[0])),
+		clip_skip:          int32(inputs.ClipSkip),
+		vid_req_frames:     int32(inputs.VidReqFrames),
+		video_output_type:  int32(inputs.VideoOutputType),
+		remove_limits:      inputs.RemoveLimits,
+		circular_x:         inputs.CircularX,
+		circular_y:         inputs.CircularY,
+		upscale:            inputs.Upscale,
 	}
 
 	var cOutputs cSDGenerationOutputs
@@ -346,7 +346,7 @@ func (k *KoboldCpp) SDGenerate(inputs SDGenerationInputs) (*SDGenerationOutputs,
 		Status:    int(cOutputs.status),
 		Animated:  int(cOutputs.animated),
 		Data:      charPtrToString(cOutputs.data),
-		DataExtra: charPtrToString(cOutputs.dataExtra),
+		DataExtra: charPtrToString(cOutputs.data_extra),
 	}
 
 	if outputs.Status != 1 {
@@ -366,8 +366,8 @@ func (k *KoboldCpp) SDUpscale(inputs SDUpscaleInputs) (*SDGenerationOutputs, err
 	initImagesBytes := append([]byte(inputs.InitImages), 0)
 
 	cInputs := cSDUpscaleInputs{
-		initImages:      uintptr(unsafe.Pointer(&initImagesBytes[0])),
-		upscalingResize: int32(inputs.UpscalingResize),
+		init_images:      uintptr(unsafe.Pointer(&initImagesBytes[0])),
+		upscaling_resize: int32(inputs.UpscalingResize),
 	}
 
 	var cOutputs cSDGenerationOutputs
@@ -380,7 +380,7 @@ func (k *KoboldCpp) SDUpscale(inputs SDUpscaleInputs) (*SDGenerationOutputs, err
 		Status:    int(cOutputs.status),
 		Animated:  int(cOutputs.animated),
 		Data:      charPtrToString(cOutputs.data),
-		DataExtra: charPtrToString(cOutputs.dataExtra),
+		DataExtra: charPtrToString(cOutputs.data_extra),
 	}
 
 	if outputs.Status != 1 {
