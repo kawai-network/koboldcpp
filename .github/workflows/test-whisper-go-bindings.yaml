@@ -383,12 +383,12 @@ jobs:
           go mod verify
 
       - name: Build SD examples
-        working-directory: go/examples
+        working-directory: go
         run: |
-          # Build SD examples to verify they compile
-          go build -v -o sd_example sd_example.go
-          go build -v -o sd_img2img_example sd_img2img_example.go
-          ls -lh sd_*
+          # Build SD examples to verify they compile (from parent directory)
+          go build -v -o examples/sd_example ./examples/sd_example.go
+          go build -v -o examples/sd_img2img_example ./examples/sd_img2img_example.go
+          ls -lh examples/sd_*
 
       - name: Test SD example help output
         working-directory: go/examples
