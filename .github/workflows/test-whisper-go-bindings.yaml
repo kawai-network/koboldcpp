@@ -5,6 +5,7 @@ on:
     branches:
       - concedo
       - concedo_experimental
+      - go-binding-v2
     paths:
       - 'go/**'
       - 'expose.cpp'
@@ -16,6 +17,7 @@ on:
     branches:
       - concedo
       - concedo_experimental
+      - go-binding-v2
     paths:
       - 'go/**'
       - 'expose.cpp'
