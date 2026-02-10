@@ -345,11 +345,17 @@ func (k *KoboldCpp) LoadModel(inputs LoadModelInputs) error {
 	overrideTensorsPtr, overrideTensorsBytes := toCString(inputs.OverrideTensors)
 	devicesOverridePtr, devicesOverrideBytes := toCString(inputs.DevicesOverride)
 
-	// Prepare override_kv array
+	// Prepare override_kv array (all slots must have valid pointers)
 	var overrideKVPtrs [OverrideKVMax]uintptr
 	var overrideKVBytes [][]byte
-	for i := 0; i < OverrideKVMax && i < len(inputs.OverrideKV); i++ {
-		kvBytes := append([]byte(inputs.OverrideKV[i]), 0)
+	for i := 0; i < OverrideKVMax; i++ {
+		var kvBytes []byte
+		if i < len(inputs.OverrideKV) && inputs.OverrideKV[i] != "" {
+			kvBytes = append([]byte(inputs.OverrideKV[i]), 0)
+		} else {
+			// Empty string for unused slots (C++ code iterates all slots)
+			kvBytes = []byte{0}
+		}
 		overrideKVBytes = append(overrideKVBytes, kvBytes)
 		overrideKVPtrs[i] = uintptr(unsafe.Pointer(&kvBytes[0]))
 	}
