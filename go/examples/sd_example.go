@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	koboldcpp "github.com/kawai-network/koboldcpp/go"
+	koboldcpp "github.com/kawai-network/koboldcpp"
 )
 
 func main() {
