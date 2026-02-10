@@ -1,0 +1,86 @@
+name: Quick Test - Go Whisper
+
+on:
+  push:
+    branches:
+      - '**'
+    paths:
+      - 'go/**'
+  pull_request:
+    paths:
+      - 'go/**'
+
+jobs:
+  quick-test:
+    name: Quick Go Build Test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+
+      - name: Check Go formatting
+        working-directory: go
+        run: |
+          if [ -n "$(gofmt -l .)" ]; then
+            echo "❌ Go code is not formatted"
+            gofmt -d .
+            exit 1
+          fi
+          echo "✅ Go code is properly formatted"
+
+      - name: Verify Go module
+        working-directory: go
+        run: |
+          go mod download
+          go mod verify
+          echo "✅ Go module verified"
+
+      - name: Check for syntax errors
+        working-directory: go
+        run: |
+          go build -o /dev/null ./... 2>&1 | tee build.log
+          if [ -s build.log ]; then
+            echo "❌ Build errors found"
+            exit 1
+          fi
+          echo "✅ No syntax errors"
+
+      - name: Run go vet
+        working-directory: go
+        run: |
+          go vet ./...
+          echo "✅ go vet passed"
+
+      - name: Check for common issues
+        working-directory: go
+        run: |
+          # Check for TODO/FIXME comments
+          echo "Checking for TODO/FIXME comments..."
+          grep -rn "TODO\|FIXME" . || echo "✅ No TODO/FIXME found"
+          
+          # Check for debug prints
+          echo "Checking for debug prints..."
+          grep -rn "fmt.Print\|log.Print" . | grep -v "_test.go" | grep -v "example" || echo "✅ No debug prints in production code"
+
+      - name: Build examples
+        working-directory: go/examples
+        run: |
+          go build -v whisper_example.go
+          go build -v simple_whisper.go
+          echo "✅ Examples built successfully"
+
+      - name: Summary
+        run: |
+          echo "## ✅ Quick Test Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Go formatting check passed" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Go module verified" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ No syntax errors" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ go vet passed" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Examples built successfully" >> $GITHUB_STEP_SUMMARY
