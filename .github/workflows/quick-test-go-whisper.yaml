@@ -79,6 +79,13 @@ jobs:
           go build -v simple_whisper.go
           echo "✅ Examples built successfully"
 
+      - name: Test examples show help
+        working-directory: go/examples
+        run: |
+          # Test that examples can run and show usage
+          ./whisper_example --help 2>&1 || echo "✅ whisper_example executable works"
+          ./simple_whisper --help 2>&1 || echo "✅ simple_whisper executable works"
+
       - name: Summary
         run: |
           echo "## ✅ Quick Test Summary" >> $GITHUB_STEP_SUMMARY

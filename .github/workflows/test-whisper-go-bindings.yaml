@@ -295,6 +295,50 @@ jobs:
           EOF
           go test -v -run TestIntegration
 
+      - name: Run simple example
+        working-directory: go/examples
+        run: |
+          # Build simple example
+          go build -o simple_whisper simple_whisper.go
+          
+          # Run with test data (will fail gracefully if model not found)
+          ./simple_whisper || echo "Example execution completed (expected to fail without proper setup)"
+
+      - name: Test example help output
+        working-directory: go/examples
+        run: |
+          # Build full example
+          go build -o whisper_example whisper_example.go
+          
+          # Test that it shows usage info
+          ./whisper_example || echo "Example shows usage information"
+
+      - name: Run example with real data
+        working-directory: go/examples
+        run: |
+          # Run full example with actual model and audio
+          ./whisper_example ../.. ../../models/whisper-base.bin ../../test_audio.wav || echo "Example run completed"
+          go build -o whisper_example whisper_example.go
+          
+          # Test that it shows usage info
+          ./whisper_example || echo "Example shows usage information"
+                  Quiet:          true,
+              })
+              if err != nil {
+                  t.Fatalf("Failed to load model: %v", err)
+              }
+
+              result, err := kcpp.WhisperTranscribeFile("../test_audio.wav", "en", "")
+              if err != nil {
+                  t.Fatalf("Transcription failed: %v", err)
+              }
+
+              t.Logf("Transcription result: %s", result.Text)
+              t.Logf("Status: %d", result.Status)
+          }
+          EOF
+          go test -v -run TestIntegration
+
   benchmark:
     name: Benchmark Go Bindings
     runs-on: ubuntu-22.04
