@@ -38,6 +38,16 @@ jobs:
           . create_ver_file.sh
           pyinstaller --noconfirm --onefile --collect-all customtkinter --collect-all jinja2 --collect-all psutil --add-data './koboldcpp_default.so:.' --add-data './ggml-metal-merged.metal:.' --add-data './kcpp_adapters:./kcpp_adapters' --add-data './koboldcpp.py:.' --add-data './json_to_gbnf.py:.' --add-data './LICENSE.md:.' --add-data './MIT_LICENSE_GGML_SDCPP_LLAMACPP_ONLY.md:.' --add-data './embd_res:./embd_res' --version-file './version.txt' --clean --console koboldcpp.py -n "koboldcpp-mac-arm64"
 
+      - name: Package shared libraries for Go bindings
+        run: |
+          mkdir -p libs/macos
+          # Copy .so files (macOS uses .so extension for shared libs in this project)
+          cp *.so libs/macos/ 2>/dev/null || true
+          cp *.dylib libs/macos/ 2>/dev/null || true
+          ls -lh libs/macos/
+          # Create tarball
+          tar -czf koboldcpp-libs-macos-arm64.tar.gz -C libs/macos .
+
       - name: Test
         id: test
         run: |
@@ -49,4 +59,10 @@ jobs:
         with:
           name: kcpp_mac_binary
           path: dist/
+
+      - name: Save shared libraries artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kcpp_mac_libs
+          path: koboldcpp-libs-macos-arm64.tar.gz
 

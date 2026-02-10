@@ -54,8 +54,23 @@ jobs:
       - name: Rename file before upload
         run: mv dist/koboldcpp-linux-x64-cuda1210 dist/koboldcpp-linux-x64
 
+      - name: Package shared libraries for Go bindings
+        run: |
+          mkdir -p libs/linux
+          # Copy all .so files (these are the shared libraries)
+          cp *.so libs/linux/ 2>/dev/null || true
+          ls -lh libs/linux/
+          # Create tarball
+          tar -czf koboldcpp-libs-linux-x64.tar.gz -C libs/linux .
+
       - name: Save artifact
         uses: actions/upload-artifact@v4
         with:
           name: kcpp_linux_binary
           path: dist/
+
+      - name: Save shared libraries artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kcpp_linux_libs
+          path: koboldcpp-libs-linux-x64.tar.gz

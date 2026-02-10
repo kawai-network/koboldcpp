@@ -124,11 +124,27 @@ jobs:
           ./make_pyinstaller.bat
           ./make_pyinstaller_cuda.bat
 
+      - name: Package shared libraries for Go bindings
+        shell: bash
+        run: |
+          mkdir -p libs/windows
+          # Copy all .dll files (shared libraries)
+          cp *.dll libs/windows/ 2>/dev/null || true
+          ls -lh libs/windows/
+          # Create tarball
+          tar -czf koboldcpp-libs-windows-x64.tar.gz -C libs/windows .
+
       - name: Save artifact
         uses: actions/upload-artifact@v4
         with:
           name: kcpp_windows_pyinstallers
           path: dist/
+
+      - name: Save shared libraries artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kcpp_windows_libs
+          path: koboldcpp-libs-windows-x64.tar.gz
 
       - name: Generate VK Instructions
         id: gen_vk_instructions
