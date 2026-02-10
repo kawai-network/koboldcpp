@@ -62,22 +62,6 @@ jobs:
           mkdir -p models
           # Download Whisper tiny model for fast testing
           wget -q https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin -O models/whisper-tiny.bin
-          # Download SD model (SDXS-512-0.9) with retry logic
-          curl -L --retry 3 --retry-delay 5 \
-            -o models/sdxs-512.safetensors \
-            https://huggingface.co/IDKiro/sdxs-512-0.9/resolve/main/sdxs-512-0.9.safetensors || {
-            echo "SD model download failed"
-            rm -f models/sdxs-512.safetensors
-          }
-          # Verify SD model file size (should be ~600MB)
-          if [ -f models/sdxs-512.safetensors ]; then
-            FILE_SIZE=$(stat -c%s models/sdxs-512.safetensors 2>/dev/null || stat -f%z models/sdxs-512.safetensors 2>/dev/null || echo 0)
-            echo "SD model file size: $FILE_SIZE bytes"
-            if [ "$FILE_SIZE" -lt 1000000 ]; then
-              echo "SD model too small, download likely failed"
-              rm -f models/sdxs-512.safetensors
-            fi
-          fi
           ls -lh models/
 
       - name: Generate test audio
