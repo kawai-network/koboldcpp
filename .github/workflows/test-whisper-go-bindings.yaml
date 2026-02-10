@@ -70,7 +70,6 @@ jobs:
         working-directory: go
         run: |
           go test -v -coverprofile=coverage.out -covermode=atomic
-        env:
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
@@ -128,7 +127,6 @@ jobs:
         working-directory: go
         run: |
           go test -v -coverprofile=coverage.out -covermode=atomic
-        env:
 
       - name: Build examples
         working-directory: go/examples
@@ -183,7 +181,6 @@ jobs:
         shell: bash
         run: |
           go test -v -coverprofile=coverage.out -covermode=atomic
-        env:
 
       - name: Build examples
         working-directory: go/examples
@@ -323,26 +320,6 @@ jobs:
         run: |
           # Run full example with actual model and audio
           ./whisper_example ../.. ../../models/whisper-base.bin ../../test_audio.wav || echo "Example run completed"
-          go build -o whisper_example whisper_example.go
-          
-          # Test that it shows usage info
-          ./whisper_example || echo "Example shows usage information"
-                  Quiet:          true,
-              })
-              if err != nil {
-                  t.Fatalf("Failed to load model: %v", err)
-              }
-
-              result, err := kcpp.WhisperTranscribeFile("../test_audio.wav", "en", "")
-              if err != nil {
-                  t.Fatalf("Transcription failed: %v", err)
-              }
-
-              t.Logf("Transcription result: %s", result.Text)
-              t.Logf("Status: %d", result.Status)
-          }
-          EOF
-          go test -v -run TestIntegration
 
   benchmark:
     name: Benchmark Go Bindings
