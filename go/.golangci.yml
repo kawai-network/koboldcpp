@@ -6,6 +6,7 @@ run:
   skip-dirs:
     - vendor
     - examples
+  skip-dirs-use-default: false
 
 linters:
   enable:
