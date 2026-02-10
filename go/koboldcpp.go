@@ -70,9 +70,10 @@ func (k *KoboldCpp) LoadLibrary(variant LibraryVariant, libDir string) error {
 		return fmt.Errorf("failed to initialize whisper functions: %w", err)
 	}
 
-	// Initialize Llama functions
+	// Initialize Llama functions (optional - may not be available in all builds)
 	if err := initLlamaFunctions(handle); err != nil {
-		return fmt.Errorf("failed to initialize llama functions: %w", err)
+		// Llama functions are optional, just log the error
+		fmt.Printf("Warning: Llama functions not available: %v\n", err)
 	}
 
 	// Initialize SD functions (optional - may not be available in all builds)
