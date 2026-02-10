@@ -133,7 +133,7 @@ jobs:
         run: |
           cat > integration_test.go << 'EOF'
           package koboldcpp
-          import ("os"; "testing")
+          import ("os"; "path/filepath"; "testing")
           
           func TestWhisperIntegration(t *testing.T) {
               kcpp := New()
@@ -179,9 +179,15 @@ jobs:
               }
               
               t.Log("Loading SD model...")
+              // Get absolute path to repo root for ExecutablePath (SD needs this for embd_res/)
+              absPath, err := filepath.Abs("..")
+              if err != nil {
+                  t.Fatalf("Failed to get absolute path: %v", err)
+              }
+              t.Logf("Using ExecutablePath: %s", absPath)
               if err := kcpp.LoadSDModel(SDLoadModelInputs{
                   ModelFilename: modelPath,
-                  ExecutablePath: "..",
+                  ExecutablePath: absPath,
                   Threads: 4,
                   Quiet: false,
               }); err != nil {
@@ -304,7 +310,7 @@ jobs:
         run: |
           cat > integration_test.go << 'EOF'
           package koboldcpp
-          import ("os"; "testing")
+          import ("os"; "path/filepath"; "testing")
           
           func TestWhisperIntegration(t *testing.T) {
               kcpp := New()
@@ -350,9 +356,15 @@ jobs:
               }
               
               t.Log("Loading SD model...")
+              // Get absolute path to repo root for ExecutablePath (SD needs this for embd_res/)
+              absPath, err := filepath.Abs("..")
+              if err != nil {
+                  t.Fatalf("Failed to get absolute path: %v", err)
+              }
+              t.Logf("Using ExecutablePath: %s", absPath)
               if err := kcpp.LoadSDModel(SDLoadModelInputs{
                   ModelFilename: modelPath,
-                  ExecutablePath: "..",
+                  ExecutablePath: absPath,
                   Threads: 4,
                   Quiet: false,
               }); err != nil {
@@ -489,7 +501,7 @@ jobs:
         run: |
           cat > integration_test.go << 'EOF'
           package koboldcpp
-          import ("os"; "testing")
+          import ("os"; "path/filepath"; "testing")
           
           func TestWhisperIntegration(t *testing.T) {
               kcpp := New()
@@ -535,9 +547,15 @@ jobs:
               }
               
               t.Log("Loading SD model...")
+              // Get absolute path to repo root for ExecutablePath (SD needs this for embd_res/)
+              absPath, err := filepath.Abs("..")
+              if err != nil {
+                  t.Fatalf("Failed to get absolute path: %v", err)
+              }
+              t.Logf("Using ExecutablePath: %s", absPath)
               if err := kcpp.LoadSDModel(SDLoadModelInputs{
                   ModelFilename: modelPath,
-                  ExecutablePath: "..",
+                  ExecutablePath: absPath,
                   Threads: 4,
                   Quiet: false,
               }); err != nil {
