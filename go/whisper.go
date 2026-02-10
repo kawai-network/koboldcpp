@@ -65,34 +65,26 @@ var (
 
 // initWhisperFunctions initializes the Whisper-related function pointers
 func initWhisperFunctions(handle uintptr) error {
-	var err error
-
 	// whisper_load_model
-	whisperLoadModel, err = purego.Dlsym[func(cWhisperLoadModelInputs) bool](
-		handle,
-		"whisper_load_model",
-	)
+	whisperLoadModelPtr, err := purego.Dlsym(handle, "whisper_load_model")
 	if err != nil {
 		return fmt.Errorf("failed to load whisper_load_model: %w", err)
 	}
+	purego.RegisterFunc(&whisperLoadModel, whisperLoadModelPtr)
 
 	// whisper_generate
-	whisperGenerate, err = purego.Dlsym[func(cWhisperGenerationInputs) cWhisperGenerationOutputs](
-		handle,
-		"whisper_generate",
-	)
+	whisperGeneratePtr, err := purego.Dlsym(handle, "whisper_generate")
 	if err != nil {
 		return fmt.Errorf("failed to load whisper_generate: %w", err)
 	}
+	purego.RegisterFunc(&whisperGenerate, whisperGeneratePtr)
 
 	// get_total_transcribe_gens
-	getTotalTranscribeGens, err = purego.Dlsym[func() int32](
-		handle,
-		"get_total_transcribe_gens",
-	)
+	getTotalTranscribeGensPtr, err := purego.Dlsym(handle, "get_total_transcribe_gens")
 	if err != nil {
 		return fmt.Errorf("failed to load get_total_transcribe_gens: %w", err)
 	}
+	purego.RegisterFunc(&getTotalTranscribeGens, getTotalTranscribeGensPtr)
 
 	return nil
 }

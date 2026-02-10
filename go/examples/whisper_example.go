@@ -94,11 +94,11 @@ func main() {
 	// For this example, we'll use the same audio file if it exists
 	if _, err := os.Stat(audioPath); err == nil {
 		// Read and encode audio
-		audioData, err := os.ReadFile(audioPath)
+		_, err := os.ReadFile(audioPath)
 		if err != nil {
 			log.Printf("Failed to read audio: %v", err)
 		} else {
-			// In real usage, you'd encode to base64
+			// In real usage, you'd encode to base64 and use WhisperTranscribe
 			// For now, we'll use the file method
 			fmt.Println("Using file-based transcription (see Example 2)")
 		}
