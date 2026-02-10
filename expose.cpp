@@ -219,9 +219,24 @@ extern "C"
     {
         return whispertype_load_model(inputs);
     }
+    // Pointer-based version for cross-platform FFI compatibility (Linux/Windows)
+    bool whisper_load_model_ptr(const whisper_load_model_inputs* inputs)
+    {
+        if (inputs) {
+            return whispertype_load_model(*inputs);
+        }
+        return false;
+    }
     whisper_generation_outputs whisper_generate(const whisper_generation_inputs inputs)
     {
         return whispertype_generate(inputs);
+    }
+    // Pointer-based version for cross-platform FFI compatibility (Linux/Windows)
+    void whisper_generate_ptr(const whisper_generation_inputs* inputs, whisper_generation_outputs* outputs)
+    {
+        if (inputs && outputs) {
+            *outputs = whispertype_generate(*inputs);
+        }
     }
 
     bool tts_load_model(const tts_load_model_inputs inputs)

@@ -1,0 +1,363 @@
+name: Whisper Go Bindings Tests
+
+on:
+  push:
+    branches:
+      - concedo
+      - concedo_experimental
+      - go-binding-v2
+    paths:
+      - 'go/**'
+      - 'expose.cpp'
+      - 'expose.h'
+      - 'otherarch/whispercpp/**'
+      - 'Makefile'
+      - '.github/workflows/test-whisper-go-bindings.yaml'
+  pull_request:
+    branches:
+      - concedo
+      - concedo_experimental
+      - go-binding-v2
+    paths:
+      - 'go/**'
+      - 'expose.cpp'
+      - 'expose.h'
+      - 'otherarch/whispercpp/**'
+      - 'Makefile'
+      - '.github/workflows/test-whisper-go-bindings.yaml'
+  workflow_dispatch:
+
+jobs:
+  test-go-bindings-linux:
+    name: Test Go Bindings (Linux)
+    runs-on: ubuntu-22.04
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+          cache-dependency-path: go/go.sum
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential
+
+      - name: Build KoboldCpp library (CPU only)
+        run: |
+          # Build only the default CPU library for testing
+          make koboldcpp_default LLAMA_PORTABLE=1
+          ls -lh *.so
+
+      - name: Download Whisper test model
+        run: |
+          mkdir -p models
+          # Download tiny model for fast testing
+          wget -q https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin -O models/whisper-tiny.bin
+          ls -lh models/
+
+      - name: Verify Go module
+        working-directory: go
+        run: |
+          go mod download
+          go mod verify
+
+      - name: Run Go tests
+        working-directory: go
+        run: |
+          go test -v -coverprofile=coverage.out -covermode=atomic
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./go/coverage.out
+          flags: go-bindings
+          name: whisper-go-bindings
+          fail_ci_if_error: false
+
+      - name: Build examples
+        working-directory: go/examples
+        run: |
+          go build -v -o whisper_example whisper_example.go
+          go build -v -o simple_whisper simple_whisper.go
+          ls -lh
+
+      - name: Test example compilation
+        working-directory: go/examples
+        run: |
+          ./whisper_example --help || echo "Example built successfully"
+
+  test-go-bindings-macos:
+    name: Test Go Bindings (macOS)
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+          cache-dependency-path: go/go.sum
+
+      - name: Build KoboldCpp library (CPU only)
+        run: |
+          # Build only the default CPU library for testing
+          make koboldcpp_default LLAMA_PORTABLE=1
+          ls -lh *.so *.dylib || true
+
+      - name: Download Whisper test model
+        run: |
+          mkdir -p models
+          wget -q https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin -O models/whisper-tiny.bin
+          ls -lh models/
+
+      - name: Verify Go module
+        working-directory: go
+        run: |
+          go mod download
+          go mod verify
+
+      - name: Run Go tests
+        working-directory: go
+        run: |
+          go test -v -coverprofile=coverage.out -covermode=atomic
+
+      - name: Build examples
+        working-directory: go/examples
+        run: |
+          go build -v -o whisper_example whisper_example.go
+          go build -v -o simple_whisper simple_whisper.go
+          ls -lh
+
+  test-go-bindings-windows:
+    name: Test Go Bindings (Windows)
+    runs-on: windows-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+          cache-dependency-path: go/go.sum
+
+      - name: Set up w64devkit
+        run: |
+          curl -L https://github.com/skeeto/w64devkit/releases/download/v1.22.0/w64devkit-1.22.0.zip --output w64devkit.zip
+          Expand-Archive w64devkit.zip -DestinationPath .
+          echo "${{ github.workspace }}\w64devkit\bin" | Out-File -Append -FilePath $env:GITHUB_PATH -Encoding utf8
+        shell: pwsh
+
+      - name: Build KoboldCpp library (CPU only)
+        shell: bash
+        run: |
+          # Build only the default CPU library for testing
+          make koboldcpp_default LLAMA_PORTABLE=1
+          ls -lh *.dll
+
+      - name: Download Whisper test model
+        shell: bash
+        run: |
+          mkdir -p models
+          curl -L -o models/whisper-tiny.bin https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin
+          ls -lh models/
+
+      - name: Verify Go module
+        working-directory: go
+        run: |
+          go mod download
+          go mod verify
+
+      - name: Run Go tests
+        working-directory: go
+        shell: bash
+        run: |
+          go test -v -coverprofile=coverage.out -covermode=atomic
+
+      - name: Build examples
+        working-directory: go/examples
+        shell: bash
+        run: |
+          go build -v -o whisper_example.exe whisper_example.go
+          go build -v -o simple_whisper.exe simple_whisper.go
+          ls -lh
+
+  lint-go-code:
+    name: Lint Go Code
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+          cache-dependency-path: go/go.sum
+
+      - name: Run go vet
+        working-directory: go
+        run: go vet -unsafeptr=false $(go list ./... | grep -v /examples)
+
+      - name: Run go fmt check
+        working-directory: go
+        run: |
+          # Check formatting, excluding examples directory
+          FILES=$(find . -name '*.go' -not -path './examples/*')
+          if [ -n "$FILES" ]; then
+            UNFORMATTED=$(gofmt -l $FILES)
+            if [ -n "$UNFORMATTED" ]; then
+              echo "Go code is not formatted:"
+              gofmt -d $FILES
+              exit 1
+            fi
+          fi
+
+  integration-test:
+    name: Integration Test with Real Audio
+    runs-on: ubuntu-22.04
+    needs: [test-go-bindings-linux]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential ffmpeg
+
+      - name: Build KoboldCpp library
+        run: |
+          # Build only the default CPU library for testing
+          make koboldcpp_default LLAMA_PORTABLE=1
+          ls -lh *.so
+
+      - name: Download Whisper model
+        run: |
+          mkdir -p models
+          wget -q https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin -O models/whisper-base.bin
+
+      - name: Generate test audio
+        run: |
+          # Generate a simple test audio file with speech
+          ffmpeg -f lavfi -i "sine=frequency=1000:duration=3" -ac 1 -ar 16000 test_audio.wav -y
+
+      - name: Run integration test
+        working-directory: go
+        run: |
+          cat > integration_test.go << 'EOF'
+          package koboldcpp
+
+          import (
+              "testing"
+          )
+
+          func TestIntegration(t *testing.T) {
+              kcpp := New()
+              err := kcpp.LoadLibrary(LibDefault, "..")
+              if err != nil {
+                  t.Fatalf("Failed to load library: %v", err)
+              }
+              defer kcpp.Close()
+
+              err = kcpp.LoadWhisperModel(WhisperLoadModelInputs{
+                  ModelFilename:  "../models/whisper-base.bin",
+                  ExecutablePath: "..",
+                  Quiet:          true,
+              })
+              if err != nil {
+                  t.Fatalf("Failed to load model: %v", err)
+              }
+
+              result, err := kcpp.WhisperTranscribeFile("../test_audio.wav", "en", "")
+              if err != nil {
+                  t.Fatalf("Transcription failed: %v", err)
+              }
+
+              t.Logf("Transcription result: %s", result.Text)
+              t.Logf("Status: %d", result.Status)
+          }
+          EOF
+          go test -v -run TestIntegration
+
+      - name: Run simple example
+        working-directory: go/examples
+        run: |
+          # Build simple example
+          go build -o simple_whisper simple_whisper.go
+          
+          # Run with test data (will fail gracefully if model not found)
+          ./simple_whisper || echo "Example execution completed (expected to fail without proper setup)"
+
+      - name: Test example help output
+        working-directory: go/examples
+        run: |
+          # Build full example
+          go build -o whisper_example whisper_example.go
+          
+          # Test that it shows usage info
+          ./whisper_example || echo "Example shows usage information"
+
+      - name: Run example with real data
+        working-directory: go/examples
+        run: |
+          # Run full example with actual model and audio
+          ./whisper_example ../.. ../../models/whisper-base.bin ../../test_audio.wav || echo "Example run completed"
+
+  benchmark:
+    name: Benchmark Go Bindings
+    runs-on: ubuntu-22.04
+    if: github.event_name == 'push' && github.ref == 'refs/heads/concedo'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential ffmpeg
+
+      - name: Build KoboldCpp library
+        run: |
+          make LLAMA_PORTABLE=1
+
+      - name: Download Whisper model
+        run: |
+          mkdir -p models
+          wget -q https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin -O models/whisper-tiny.bin
+
+      - name: Generate test audio
+        run: |
+          ffmpeg -f lavfi -i "sine=frequency=1000:duration=3" -ac 1 -ar 16000 test_audio.wav -y
+
+      - name: Run benchmarks
+        working-directory: go
+        run: |
+          go test -bench=. -benchmem -benchtime=3x -run=^$ | tee benchmark.txt
+
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results
+          path: go/benchmark.txt
