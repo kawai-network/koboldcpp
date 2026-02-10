@@ -43,7 +43,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.23.x'
+          go-version: '1.25.5'
           cache-dependency-path: go/go.sum
 
       - name: Install build dependencies
@@ -140,7 +140,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.23.x'
+          go-version: '1.25.5'
           cache-dependency-path: go/go.sum
 
       - name: Install build dependencies
@@ -227,7 +227,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.23.x'
+          go-version: '1.25.5'
           cache-dependency-path: go/go.sum
 
       - name: Set up w64devkit
@@ -328,7 +328,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.23.x'
+          go-version: '1.25.5'
           cache-dependency-path: go/go.sum
 
       - name: Run go vet
@@ -361,7 +361,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.23.x'
+          go-version: '1.25.5'
 
       - name: Install dependencies
         run: |
@@ -481,7 +481,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.23.x'
+          go-version: '1.25.5'
 
       - name: Install dependencies
         run: |
