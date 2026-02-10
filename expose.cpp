@@ -198,6 +198,14 @@ extern "C"
         return gpttype_generate(inputs);
     }
 
+    // Pointer-based version for cross-platform FFI compatibility (Linux/Windows)
+    void generate_ptr(const generation_inputs* inputs, generation_outputs* outputs)
+    {
+        if (inputs && outputs) {
+            *outputs = gpttype_generate(*inputs);
+        }
+    }
+
     bool sd_load_model(const sd_load_model_inputs inputs)
     {
         return sdtype_load_model(inputs);

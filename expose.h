@@ -349,6 +349,9 @@ extern stop_reason last_stop_reason;
 extern "C" {
 #endif
 
+// Llama text generation pointer-based functions for FFI compatibility
+void generate_ptr(const generation_inputs* inputs, generation_outputs* outputs);
+
 // Stable Diffusion pointer-based functions for FFI compatibility
 bool sd_load_model_ptr(const sd_load_model_inputs* inputs);
 void sd_generate_ptr(const sd_generation_inputs* inputs, sd_generation_outputs* outputs);

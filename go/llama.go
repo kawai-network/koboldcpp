@@ -261,7 +261,7 @@ type cTokenCountOutputs struct {
 
 var (
 	loadModelFunc      func(inputs *cLoadModelInputs) bool
-	generateFunc       func(inputs *cGenerationInputs) cGenerationOutputs
+	generateFunc       func(inputs *cGenerationInputs, outputs *cGenerationOutputs)
 	abortGenerateFunc  func() bool
 	tokenCountFunc     func(input uintptr, addbos bool) cTokenCountOutputs
 	newTokenFunc       func(idx int32) uintptr
@@ -278,10 +278,10 @@ func initLlamaFunctions(handle uintptr) error {
 	}
 	purego.RegisterFunc(&loadModelFunc, loadModelPtr)
 
-	// generate
-	generatePtr, err := dlsymPlatform(handle, "generate")
+	// generate_ptr (pointer-based for cross-platform compatibility)
+	generatePtr, err := dlsymPlatform(handle, "generate_ptr")
 	if err != nil {
-		return fmt.Errorf("failed to load generate: %w", err)
+		return fmt.Errorf("failed to load generate_ptr: %w", err)
 	}
 	purego.RegisterFunc(&generateFunc, generatePtr)
 
@@ -518,7 +518,8 @@ func (k *KoboldCpp) Generate(inputs GenerationInputs) (*GenerationOutputs, error
 
 	// TODO: Handle arrays: dry_sequence_breakers, stop_sequence, logit_biases, banned_tokens
 
-	cOutputs := generateFunc(&cInputs)
+	var cOutputs cGenerationOutputs
+	generateFunc(&cInputs, &cOutputs)
 
 	// Keep byte slices alive
 	runtime.KeepAlive(promptBytes)
