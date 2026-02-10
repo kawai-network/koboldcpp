@@ -6,9 +6,11 @@ on:
       - '**'
     paths:
       - 'go/**'
+      - '.github/workflows/quick-test-go-whisper.yaml'
   pull_request:
     paths:
       - 'go/**'
+      - '.github/workflows/quick-test-go-whisper.yaml'
 
 jobs:
   quick-test:
