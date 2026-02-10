@@ -136,58 +136,68 @@ type TokenCountOutputs struct {
 	IDs   []int
 }
 
-// C struct definitions matching expose.h
+// C struct definitions matching expose.h with correct padding
 type cLoadModelInputs struct {
-	threads               int32
-	blasthreads           int32
-	max_context_length    int32
-	low_vram              bool
-	use_mmq               bool
-	use_rowsplit          bool
-	executable_path       uintptr
-	model_filename        uintptr
-	lora_filename         uintptr
-	draftmodel_filename   uintptr
-	draft_amount          int32
-	draft_gpulayers       int32
-	draft_gpusplit        [TensorSplitMax]float32
-	mmproj_filename       uintptr
-	mmproj_cpu            bool
-	visionmaxres          int32
-	use_mmap              bool
-	use_mlock             bool
-	use_smartcontext      bool
-	use_contextshift      bool
-	use_fastforward       bool
-	kcpp_main_gpu         int32
-	vulkan_info           uintptr
-	batchsize             int32
-	autofit               bool
-	autofit_tax_mb        int32
-	gpulayers             int32
-	rope_freq_scale       float32
-	rope_freq_base        float32
-	overridenativecontext int32
-	moe_experts           int32
-	moecpu                int32
-	no_bos_token          bool
-	load_guidance         bool
-	override_kv           [OverrideKVMax]uintptr
-	override_tensors      uintptr
-	flash_attention       bool
-	tensor_split          [TensorSplitMax]float32
-	quant_k               int32
-	quant_v               int32
-	check_slowness        bool
-	highpriority          bool
-	swa_support           bool
-	smartcache            bool
-	smartcacheslots       int32
-	pipelineparallel      bool
-	lora_multiplier       float32
-	devices_override      uintptr
-	quiet                 bool
-	debugmode             int32
+	threads               int32                   // offset 0
+	blasthreads           int32                   // offset 4
+	max_context_length    int32                   // offset 8
+	low_vram              bool                    // offset 12
+	use_mmq               bool                    // offset 13
+	use_rowsplit          bool                    // offset 14
+	_pad1                 byte                    // offset 15 - padding
+	executable_path       uintptr                 // offset 16
+	model_filename        uintptr                 // offset 24
+	lora_filename         uintptr                 // offset 32
+	draftmodel_filename   uintptr                 // offset 40
+	draft_amount          int32                   // offset 48
+	draft_gpulayers       int32                   // offset 52
+	draft_gpusplit        [TensorSplitMax]float32 // offset 56 (16*4=64 bytes)
+	mmproj_filename       uintptr                 // offset 120
+	mmproj_cpu            bool                    // offset 128
+	_pad2                 [3]byte                 // offset 129-131 - padding
+	visionmaxres          int32                   // offset 132
+	use_mmap              bool                    // offset 136
+	use_mlock             bool                    // offset 137
+	use_smartcontext      bool                    // offset 138
+	use_contextshift      bool                    // offset 139
+	use_fastforward       bool                    // offset 140
+	_pad3                 [3]byte                 // offset 141-143 - padding
+	kcpp_main_gpu         int32                   // offset 144
+	_pad4                 [4]byte                 // offset 148-151 - padding
+	vulkan_info           uintptr                 // offset 152
+	batchsize             int32                   // offset 160
+	autofit               bool                    // offset 164
+	_pad5                 [3]byte                 // offset 165-167 - padding
+	autofit_tax_mb        int32                   // offset 168
+	gpulayers             int32                   // offset 172
+	rope_freq_scale       float32                 // offset 176
+	rope_freq_base        float32                 // offset 180
+	overridenativecontext int32                   // offset 184
+	moe_experts           int32                   // offset 188
+	moecpu                int32                   // offset 192
+	no_bos_token          bool                    // offset 196
+	load_guidance         bool                    // offset 197
+	_pad6                 [2]byte                 // offset 198-199 - padding
+	override_kv           [OverrideKVMax]uintptr  // offset 200 (4*8=32 bytes)
+	override_tensors      uintptr                 // offset 232
+	flash_attention       bool                    // offset 240
+	_pad7                 [3]byte                 // offset 241-243 - padding
+	tensor_split          [TensorSplitMax]float32 // offset 244 (16*4=64 bytes)
+	quant_k               int32                   // offset 308
+	quant_v               int32                   // offset 312
+	check_slowness        bool                    // offset 316
+	highpriority          bool                    // offset 317
+	swa_support           bool                    // offset 318
+	smartcache            bool                    // offset 319
+	smartcacheslots       int32                   // offset 320
+	pipelineparallel      bool                    // offset 324
+	_pad8                 [3]byte                 // offset 325-327 - padding
+	lora_multiplier       float32                 // offset 328
+	_pad9                 [4]byte                 // offset 332-335 - padding
+	devices_override      uintptr                 // offset 336
+	quiet                 bool                    // offset 344
+	_pad10                [3]byte                 // offset 345-347 - padding
+	debugmode             int32                   // offset 348
 }
 
 type cGenerationInputs struct {
