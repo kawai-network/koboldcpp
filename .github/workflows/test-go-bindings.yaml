@@ -51,6 +51,13 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential ffmpeg
 
+      - name: Cache SD model
+        id: cache-sd-model
+        uses: actions/cache@v4
+        with:
+          path: models/sd-model.safetensors
+          key: sd-model-dreamshaper-v8
+
       - name: Build KoboldCpp library (CPU only with SD support)
         run: |
           # Build with SD support for testing
@@ -62,6 +69,29 @@ jobs:
           mkdir -p models
           # Download Whisper tiny model for fast testing
           wget -q https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin -O models/whisper-tiny.bin
+          
+          # Download SD model only if not cached
+          if [ ! -f models/sd-model.safetensors ]; then
+            echo "SD model not in cache, downloading..."
+            curl -L --retry 3 --retry-delay 5 \
+              -o models/sd-model.safetensors \
+              https://huggingface.co/Lykon/DreamShaper/resolve/main/DreamShaper_8_pruned.safetensors || {
+              echo "SD model download failed"
+              rm -f models/sd-model.safetensors
+            }
+          else
+            echo "SD model found in cache, skipping download"
+          fi
+          
+          # Verify SD model file size (DreamShaper is ~2GB)
+          if [ -f models/sd-model.safetensors ]; then
+            FILE_SIZE=$(stat -c%s models/sd-model.safetensors 2>/dev/null || stat -f%z models/sd-model.safetensors 2>/dev/null || echo 0)
+            echo "SD model file size: $FILE_SIZE bytes"
+            if [ "$FILE_SIZE" -lt 100000000 ]; then
+              echo "SD model too small, download likely failed"
+              rm -f models/sd-model.safetensors
+            fi
+          fi
           ls -lh models/
 
       - name: Generate test audio
@@ -135,7 +165,8 @@ jobs:
               }
               defer kcpp.Close()
               
-              modelPath := "../models/sdxs-512.safetensors"
+              // Check if model exists
+              modelPath := "../models/sd-model.safetensors"
               fileInfo, err := os.Stat(modelPath)
               if os.IsNotExist(err) {
                   t.Skip("SD model not available, skipping test")
@@ -143,8 +174,8 @@ jobs:
               if err != nil {
                   t.Skipf("Cannot stat model file: %v", err)
               }
-              if fileInfo.Size() < 1000000 {
-                  t.Skipf("Model file too small (%d bytes), download failed", fileInfo.Size())
+              if fileInfo.Size() < 100000000 {
+                  t.Skipf("Model file too small (%d bytes), download likely failed", fileInfo.Size())
               }
               
               t.Log("Loading SD model...")
@@ -199,6 +230,13 @@ jobs:
         run: |
           brew install ffmpeg
 
+      - name: Cache SD model
+        id: cache-sd-model
+        uses: actions/cache@v4
+        with:
+          path: models/sd-model.safetensors
+          key: sd-model-dreamshaper-v8
+
       - name: Build KoboldCpp library (CPU only with SD support)
         run: |
           # Build with SD support for testing
@@ -210,20 +248,27 @@ jobs:
           mkdir -p models
           # Download Whisper tiny model
           wget -q https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin -O models/whisper-tiny.bin
-          # Download SD model with retry logic
-          curl -L --retry 3 --retry-delay 5 \
-            -o models/sdxs-512.safetensors \
-            https://huggingface.co/IDKiro/sdxs-512-0.9/resolve/main/sdxs-512-0.9.safetensors || {
-            echo "SD model download failed"
-            rm -f models/sdxs-512.safetensors
-          }
+          
+          # Download SD model only if not cached
+          if [ ! -f models/sd-model.safetensors ]; then
+            echo "SD model not in cache, downloading..."
+            curl -L --retry 3 --retry-delay 5 \
+              -o models/sd-model.safetensors \
+              https://huggingface.co/Lykon/DreamShaper/resolve/main/DreamShaper_8_pruned.safetensors || {
+              echo "SD model download failed"
+              rm -f models/sd-model.safetensors
+            }
+          else
+            echo "SD model found in cache, skipping download"
+          fi
+          
           # Verify SD model file size
-          if [ -f models/sdxs-512.safetensors ]; then
-            FILE_SIZE=$(stat -f%z models/sdxs-512.safetensors 2>/dev/null || echo 0)
+          if [ -f models/sd-model.safetensors ]; then
+            FILE_SIZE=$(stat -f%z models/sd-model.safetensors 2>/dev/null || echo 0)
             echo "SD model file size: $FILE_SIZE bytes"
-            if [ "$FILE_SIZE" -lt 1000000 ]; then
+            if [ "$FILE_SIZE" -lt 100000000 ]; then
               echo "SD model too small, download likely failed"
-              rm -f models/sdxs-512.safetensors
+              rm -f models/sd-model.safetensors
             fi
           fi
           ls -lh models/
@@ -291,7 +336,8 @@ jobs:
               }
               defer kcpp.Close()
               
-              modelPath := "../models/sdxs-512.safetensors"
+              // Check if model exists
+              modelPath := "../models/sd-model.safetensors"
               fileInfo, err := os.Stat(modelPath)
               if os.IsNotExist(err) {
                   t.Skip("SD model not available, skipping test")
@@ -299,8 +345,8 @@ jobs:
               if err != nil {
                   t.Skipf("Cannot stat model file: %v", err)
               }
-              if fileInfo.Size() < 1000000 {
-                  t.Skipf("Model file too small (%d bytes), download failed", fileInfo.Size())
+              if fileInfo.Size() < 100000000 {
+                  t.Skipf("Model file too small (%d bytes), download likely failed", fileInfo.Size())
               }
               
               t.Log("Loading SD model...")
@@ -363,6 +409,13 @@ jobs:
           choco install ffmpeg -y
         shell: pwsh
 
+      - name: Cache SD model
+        id: cache-sd-model
+        uses: actions/cache@v4
+        with:
+          path: models/sd-model.safetensors
+          key: sd-model-dreamshaper-v8
+
       - name: Build KoboldCpp library (CPU only with SD support)
         shell: bash
         run: |
@@ -376,20 +429,27 @@ jobs:
           mkdir -p models
           # Download Whisper tiny model
           curl -L -o models/whisper-tiny.bin https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin
-          # Download SD model with retry logic
-          curl -L --retry 3 --retry-delay 5 \
-            -o models/sdxs-512.safetensors \
-            https://huggingface.co/IDKiro/sdxs-512-0.9/resolve/main/sdxs-512-0.9.safetensors || {
-            echo "SD model download failed"
-            rm -f models/sdxs-512.safetensors
-          }
+          
+          # Download SD model only if not cached
+          if [ ! -f models/sd-model.safetensors ]; then
+            echo "SD model not in cache, downloading..."
+            curl -L --retry 3 --retry-delay 5 \
+              -o models/sd-model.safetensors \
+              https://huggingface.co/Lykon/DreamShaper/resolve/main/DreamShaper_8_pruned.safetensors || {
+              echo "SD model download failed"
+              rm -f models/sd-model.safetensors
+            }
+          else
+            echo "SD model found in cache, skipping download"
+          fi
+          
           # Verify SD model file size
-          if [ -f models/sdxs-512.safetensors ]; then
-            FILE_SIZE=$(stat -c%s models/sdxs-512.safetensors 2>/dev/null || echo 0)
+          if [ -f models/sd-model.safetensors ]; then
+            FILE_SIZE=$(stat -c%s models/sd-model.safetensors 2>/dev/null || echo 0)
             echo "SD model file size: $FILE_SIZE bytes"
-            if [ "$FILE_SIZE" -lt 1000000 ]; then
+            if [ "$FILE_SIZE" -lt 100000000 ]; then
               echo "SD model too small, download likely failed"
-              rm -f models/sdxs-512.safetensors
+              rm -f models/sd-model.safetensors
             fi
           fi
           ls -lh models/
@@ -461,7 +521,8 @@ jobs:
               }
               defer kcpp.Close()
               
-              modelPath := "../models/sdxs-512.safetensors"
+              // Check if model exists
+              modelPath := "../models/sd-model.safetensors"
               fileInfo, err := os.Stat(modelPath)
               if os.IsNotExist(err) {
                   t.Skip("SD model not available, skipping test")
@@ -469,8 +530,8 @@ jobs:
               if err != nil {
                   t.Skipf("Cannot stat model file: %v", err)
               }
-              if fileInfo.Size() < 1000000 {
-                  t.Skipf("Model file too small (%d bytes), download failed", fileInfo.Size())
+              if fileInfo.Size() < 100000000 {
+                  t.Skipf("Model file too small (%d bytes), download likely failed", fileInfo.Size())
               }
               
               t.Log("Loading SD model...")
