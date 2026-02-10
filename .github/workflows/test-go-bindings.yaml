@@ -125,12 +125,12 @@ jobs:
       - name: Build examples
         working-directory: go
         run: |
-          go build -v -o examples/whisper_example ./examples/whisper_example.go
-          go build -v -o examples/simple_whisper ./examples/simple_whisper.go
-          go build -v -o examples/sd_example ./examples/sd_example.go
-          go build -v -o examples/sd_img2img_example ./examples/sd_img2img_example.go
-          go build -v -o examples/llama_example ./examples/llama_example.go
-          ls -lh examples/
+          go build -v -o examples/whisper/whisper ./examples/whisper
+          go build -v -o examples/simple_whisper/simple_whisper ./examples/simple_whisper
+          go build -v -o examples/sd/sd ./examples/sd
+          go build -v -o examples/sd_img2img/sd_img2img ./examples/sd_img2img
+          go build -v -o examples/llama/llama ./examples/llama
+          ls -lh examples/*/
 
       - name: Run integration tests
         working-directory: go
@@ -359,12 +359,12 @@ jobs:
       - name: Build examples
         working-directory: go
         run: |
-          go build -v -o examples/whisper_example ./examples/whisper_example.go
-          go build -v -o examples/simple_whisper ./examples/simple_whisper.go
-          go build -v -o examples/sd_example ./examples/sd_example.go
-          go build -v -o examples/sd_img2img_example ./examples/sd_img2img_example.go
-          go build -v -o examples/llama_example ./examples/llama_example.go
-          ls -lh examples/
+          go build -v -o examples/whisper/whisper ./examples/whisper
+          go build -v -o examples/simple_whisper/simple_whisper ./examples/simple_whisper
+          go build -v -o examples/sd/sd ./examples/sd
+          go build -v -o examples/sd_img2img/sd_img2img ./examples/sd_img2img
+          go build -v -o examples/llama/llama ./examples/llama
+          ls -lh examples/*/
 
       - name: Run integration tests
         working-directory: go
@@ -606,12 +606,12 @@ jobs:
         working-directory: go
         shell: bash
         run: |
-          go build -v -o examples/whisper_example.exe ./examples/whisper_example.go
-          go build -v -o examples/simple_whisper.exe ./examples/simple_whisper.go
-          go build -v -o examples/sd_example.exe ./examples/sd_example.go
-          go build -v -o examples/sd_img2img_example.exe ./examples/sd_img2img_example.go
-          go build -v -o examples/llama_example.exe ./examples/llama_example.go
-          ls -lh examples/
+          go build -v -o examples/whisper/whisper.exe ./examples/whisper
+          go build -v -o examples/simple_whisper/simple_whisper.exe ./examples/simple_whisper
+          go build -v -o examples/sd/sd.exe ./examples/sd
+          go build -v -o examples/sd_img2img/sd_img2img.exe ./examples/sd_img2img
+          go build -v -o examples/llama/llama.exe ./examples/llama
+          ls -lh examples/*/
 
       - name: Run integration tests
         working-directory: go

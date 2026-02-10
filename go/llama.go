@@ -329,23 +329,34 @@ func (k *KoboldCpp) LoadModel(inputs LoadModelInputs) error {
 		return ErrLibraryNotLoaded
 	}
 
+	// Helper function to convert string to C string pointer (NULL if empty)
+	toCString := func(s string) (uintptr, []byte) {
+		if s == "" {
+			return 0, nil
+		}
+		bytes := append([]byte(s), 0)
+		return uintptr(unsafe.Pointer(&bytes[0])), bytes
+	}
+
 	// Convert Go strings to C strings
-	executablePathBytes := append([]byte(inputs.ExecutablePath), 0)
-	modelFilenameBytes := append([]byte(inputs.ModelFilename), 0)
-	loraFilenameBytes := append([]byte(inputs.LoraFilename), 0)
-	draftModelFilenameBytes := append([]byte(inputs.DraftModelFilename), 0)
-	mmprojFilenameBytes := append([]byte(inputs.MMProjFilename), 0)
-	vulkanInfoBytes := append([]byte(inputs.VulkanInfo), 0)
-	overrideTensorsBytes := append([]byte(inputs.OverrideTensors), 0)
-	devicesOverrideBytes := append([]byte(inputs.DevicesOverride), 0)
+	executablePathPtr, executablePathBytes := toCString(inputs.ExecutablePath)
+	modelFilenamePtr, modelFilenameBytes := toCString(inputs.ModelFilename)
+	loraFilenamePtr, loraFilenameBytes := toCString(inputs.LoraFilename)
+	draftModelFilenamePtr, draftModelFilenameBytes := toCString(inputs.DraftModelFilename)
+	mmprojFilenamePtr, mmprojFilenameBytes := toCString(inputs.MMProjFilename)
+	vulkanInfoPtr, vulkanInfoBytes := toCString(inputs.VulkanInfo)
+	overrideTensorsPtr, overrideTensorsBytes := toCString(inputs.OverrideTensors)
+	devicesOverridePtr, devicesOverrideBytes := toCString(inputs.DevicesOverride)
 
 	// Prepare override_kv array
 	var overrideKVPtrs [OverrideKVMax]uintptr
 	var overrideKVBytes [][]byte
 	for i := 0; i < OverrideKVMax && i < len(inputs.OverrideKV); i++ {
-		kvBytes := append([]byte(inputs.OverrideKV[i]), 0)
-		overrideKVBytes = append(overrideKVBytes, kvBytes)
-		overrideKVPtrs[i] = uintptr(unsafe.Pointer(&kvBytes[0]))
+		if inputs.OverrideKV[i] != "" {
+			kvBytes := append([]byte(inputs.OverrideKV[i]), 0)
+			overrideKVBytes = append(overrideKVBytes, kvBytes)
+			overrideKVPtrs[i] = uintptr(unsafe.Pointer(&kvBytes[0]))
+		}
 	}
 
 	// Prepare tensor_split and draft_gpusplit arrays
@@ -366,14 +377,14 @@ func (k *KoboldCpp) LoadModel(inputs LoadModelInputs) error {
 		low_vram:              inputs.LowVRAM,
 		use_mmq:               inputs.UseMMQ,
 		use_rowsplit:          inputs.UseRowSplit,
-		executable_path:       uintptr(unsafe.Pointer(&executablePathBytes[0])),
-		model_filename:        uintptr(unsafe.Pointer(&modelFilenameBytes[0])),
-		lora_filename:         uintptr(unsafe.Pointer(&loraFilenameBytes[0])),
-		draftmodel_filename:   uintptr(unsafe.Pointer(&draftModelFilenameBytes[0])),
+		executable_path:       executablePathPtr,
+		model_filename:        modelFilenamePtr,
+		lora_filename:         loraFilenamePtr,
+		draftmodel_filename:   draftModelFilenamePtr,
 		draft_amount:          int32(inputs.DraftAmount),
 		draft_gpulayers:       int32(inputs.DraftGPULayers),
 		draft_gpusplit:        draftGPUSplit,
-		mmproj_filename:       uintptr(unsafe.Pointer(&mmprojFilenameBytes[0])),
+		mmproj_filename:       mmprojFilenamePtr,
 		mmproj_cpu:            inputs.MMProjCPU,
 		visionmaxres:          int32(inputs.VisionMaxRes),
 		use_mmap:              inputs.UseMMap,
@@ -382,7 +393,7 @@ func (k *KoboldCpp) LoadModel(inputs LoadModelInputs) error {
 		use_contextshift:      inputs.UseContextShift,
 		use_fastforward:       inputs.UseFastForward,
 		kcpp_main_gpu:         int32(inputs.MainGPU),
-		vulkan_info:           uintptr(unsafe.Pointer(&vulkanInfoBytes[0])),
+		vulkan_info:           vulkanInfoPtr,
 		batchsize:             int32(inputs.BatchSize),
 		autofit:               inputs.Autofit,
 		autofit_tax_mb:        int32(inputs.AutofitTaxMB),
@@ -395,7 +406,7 @@ func (k *KoboldCpp) LoadModel(inputs LoadModelInputs) error {
 		no_bos_token:          inputs.NoBOSToken,
 		load_guidance:         inputs.LoadGuidance,
 		override_kv:           overrideKVPtrs,
-		override_tensors:      uintptr(unsafe.Pointer(&overrideTensorsBytes[0])),
+		override_tensors:      overrideTensorsPtr,
 		flash_attention:       inputs.FlashAttention,
 		tensor_split:          tensorSplit,
 		quant_k:               int32(inputs.QuantK),
@@ -407,7 +418,7 @@ func (k *KoboldCpp) LoadModel(inputs LoadModelInputs) error {
 		smartcacheslots:       int32(inputs.SmartCacheSlots),
 		pipelineparallel:      inputs.PipelineParallel,
 		lora_multiplier:       inputs.LoraMultiplier,
-		devices_override:      uintptr(unsafe.Pointer(&devicesOverrideBytes[0])),
+		devices_override:      devicesOverridePtr,
 		quiet:                 inputs.Quiet,
 		debugmode:             int32(inputs.DebugMode),
 	}

@@ -214,14 +214,14 @@ result, _ := kcpp.WhisperTranscribe(koboldcpp.WhisperGenerationInputs{
 
 ```bash
 # Build the example
-cd go/examples
-go build -o whisper_example whisper_example.go
+cd go/examples/whisper
+go build
 
 # Run with default paths
-./whisper_example
+./whisper
 
 # Run with custom paths
-./whisper_example /path/to/libs /path/to/model.bin /path/to/audio.wav
+./whisper /path/to/libs /path/to/model.bin /path/to/audio.wav
 ```
 
 ## Supported Audio Formats
