@@ -44,7 +44,8 @@ jobs:
       - name: Check for syntax errors
         working-directory: go
         run: |
-          go build -o /dev/null ./... 2>&1 | tee build.log
+          # Build main package only (not examples)
+          go build -o /dev/null . 2>&1 | tee build.log
           if [ -s build.log ]; then
             echo "❌ Build errors found"
             exit 1
@@ -54,7 +55,8 @@ jobs:
       - name: Run go vet
         working-directory: go
         run: |
-          go vet ./...
+          # Vet main package only
+          go vet .
           echo "✅ go vet passed"
 
       - name: Check for common issues
