@@ -59,19 +59,19 @@ type cWhisperGenerationOutputs struct {
 
 // Whisper function pointers
 var (
-	whisperLoadModel       func(inputs *cWhisperLoadModelInputs) bool
+	whisperLoadModelPtr    func(inputs *cWhisperLoadModelInputs) bool
 	whisperGeneratePtr     func(inputs *cWhisperGenerationInputs, outputs *cWhisperGenerationOutputs)
 	getTotalTranscribeGens func() int32
 )
 
 // initWhisperFunctions initializes the Whisper-related function pointers
 func initWhisperFunctions(handle uintptr) error {
-	// whisper_load_model
-	whisperLoadModelPtr, err := dlsymPlatform(handle, "whisper_load_model")
+	// whisper_load_model_ptr (pointer-based version for cross-platform compatibility)
+	whisperLoadModelPtrPtr, err := dlsymPlatform(handle, "whisper_load_model_ptr")
 	if err != nil {
-		return fmt.Errorf("failed to load whisper_load_model: %w", err)
+		return fmt.Errorf("failed to load whisper_load_model_ptr: %w", err)
 	}
-	purego.RegisterFunc(&whisperLoadModel, whisperLoadModelPtr)
+	purego.RegisterFunc(&whisperLoadModelPtr, whisperLoadModelPtrPtr)
 
 	// whisper_generate_ptr (pointer-based version for cross-platform compatibility)
 	whisperGeneratePtrPtr, err := dlsymPlatform(handle, "whisper_generate_ptr")
@@ -113,7 +113,7 @@ func (k *KoboldCpp) LoadWhisperModel(inputs WhisperLoadModelInputs) error {
 		debugMode:       inputs.DebugMode,
 	}
 
-	success := whisperLoadModel(&cInputs)
+	success := whisperLoadModelPtr(&cInputs)
 
 	// Keep byte slices alive until after the C call
 	runtime.KeepAlive(modelFilenameBytes)
