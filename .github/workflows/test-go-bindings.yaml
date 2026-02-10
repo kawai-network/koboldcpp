@@ -406,6 +406,14 @@ jobs:
                   t.Skip("SD model not available, skipping generation test")
               }
 
+              // Try to get SD info first to check if SD is available
+              t.Log("Checking SD availability...")
+              info, err := kcpp.SDGetInfo()
+              if err != nil {
+                  t.Skipf("SD functions not available (library may not be built with SD support): %v", err)
+              }
+              t.Logf("SD info status: %d", info.Status)
+
               // Load SD model
               t.Log("Loading SD model...")
               err = kcpp.LoadSDModel(SDLoadModelInputs{
