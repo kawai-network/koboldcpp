@@ -80,6 +80,8 @@ echo "Creating TTS wrapper for standalone use..."
 # Create a simple wrapper
 cat > build_tts/tts_wrapper.cpp << 'EOF'
 #include "../expose.h"
+#include <string>
+#include <vector>
 #include <cstring>
 
 extern "C" {

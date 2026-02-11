@@ -207,52 +207,53 @@ jobs:
           CC=gcc
           CXX=g++
           
-          CFLAGS="-I. -Iggml/include -Iggml/src -Iggml/src/ggml-cpu -Iinclude -Isrc -I./common -I./vendor -I./vendor/stb -I./include -I./otherarch -I./otherarch/tools -I./otherarch/ttscpp/include -I./otherarch/ttscpp/src -O3 -fno-finite-math-only -std=c11 -fPIC -DLOG_DISABLE_LOGS -D_GNU_SOURCE -DGGML_USE_CPU -DGGML_USE_CPU_REPACK -pthread -mavx2 -mfma -mf16c"
+          CFLAGS="-I. -Iggml/include -Iggml/src -Iggml/src/ggml-cpu -Iinclude -Isrc -Icommon -Ivendor -Ivendor/stb -Iotherarch -Iotherarch/tools -Iotherarch/ttscpp/include -Iotherarch/ttscpp/src -O3 -fno-finite-math-only -std=c11 -fPIC -DLOG_DISABLE_LOGS -D_GNU_SOURCE -DGGML_USE_CPU -DGGML_USE_CPU_REPACK -pthread -mavx2 -mfma -mf16c"
           
-          CXXFLAGS="-I. -Iggml/include -Iggml/src -Iggml/src/ggml-cpu -Iinclude -Isrc -I./common -I./vendor -I./vendor/stb -I./include -I./otherarch -I./otherarch/tools -I./otherarch/ttscpp/include -I./otherarch/ttscpp/src -O3 -fno-finite-math-only -std=c++17 -fPIC -DLOG_DISABLE_LOGS -D_GNU_SOURCE -DGGML_USE_CPU -DGGML_USE_CPU_REPACK -pthread -Wno-multichar -Wno-write-strings -Wno-deprecated -Wno-deprecated-declarations -Wno-unused-variable -mavx2 -mfma -mf16c"
+          CXXFLAGS="-I. -Iggml/include -Iggml/src -Iggml/src/ggml-cpu -Iinclude -Isrc -Icommon -Ivendor -Ivendor/stb -Iotherarch -Iotherarch/tools -Iotherarch/ttscpp/include -Iotherarch/ttscpp/src -O3 -fno-finite-math-only -std=c++17 -fPIC -DLOG_DISABLE_LOGS -D_GNU_SOURCE -DGGML_USE_CPU -DGGML_USE_CPU_REPACK -pthread -Wno-multichar -Wno-write-strings -Wno-deprecated -Wno-deprecated-declarations -Wno-unused-variable -mavx2 -mfma -mf16c"
           
           LDFLAGS="-pthread -lm -static-libgcc -static-libstdc++"
           
           mkdir -p build_tts
-          cd build_tts
           
           echo "Compiling GGML core..."
-          $CC $CFLAGS -c ../ggml/src/ggml.c -o ggml.o
-          $CC $CFLAGS -c ../ggml/src/ggml-alloc.c -o ggml-alloc.o
-          $CC $CFLAGS -c ../ggml/src/ggml-quants.c -o ggml-quants.o
-          $CC $CFLAGS -c ../ggml/src/ggml-cpu/ggml-cpu.c -o ggml-cpu.o
-          $CC $CFLAGS -c ../ggml/src/ggml-cpu/quants.c -o ggml-cpu-quants.o
-          $CC $CFLAGS -c ../ggml/src/ggml-cpu/kcpp-quantmapper.c -o kcpp-quantmapper.o
+          $CC $CFLAGS -c ggml/src/ggml.c -o build_tts/ggml.o
+          $CC $CFLAGS -c ggml/src/ggml-alloc.c -o build_tts/ggml-alloc.o
+          $CC $CFLAGS -c ggml/src/ggml-quants.c -o build_tts/ggml-quants.o
+          $CC $CFLAGS -c ggml/src/ggml-cpu/ggml-cpu.c -o build_tts/ggml-cpu.o
+          $CC $CFLAGS -c ggml/src/ggml-cpu/quants.c -o build_tts/ggml-cpu-quants.o
+          $CC $CFLAGS -c ggml/src/ggml-cpu/kcpp-quantmapper.c -o build_tts/kcpp-quantmapper.o
           
           echo "Compiling GGML C++ components..."
-          $CXX $CXXFLAGS -c ../ggml/src/ggml-backend.cpp -o ggml-backend.o
-          $CXX $CXXFLAGS -c ../ggml/src/ggml-backend-reg.cpp -o ggml-backend-reg.o
-          $CXX $CXXFLAGS -c ../ggml/src/ggml-cpu/traits.cpp -o ggml-cpu-traits.o
-          $CXX $CXXFLAGS -c ../ggml/src/ggml-threading.cpp -o ggml-threading.o
-          $CXX $CXXFLAGS -c ../ggml/src/ggml-cpu/ggml-cpu.cpp -o ggml-cpu-cpp.o
-          $CXX $CXXFLAGS -c ../ggml/src/ggml-cpu/kcpp-repackmapper.cpp -o kcpp-repackmapper.o
-          $CXX $CXXFLAGS -c ../ggml/src/ggml-cpu/llamafile/sgemm.cpp -o sgemm.o
-          $CXX $CXXFLAGS -c ../ggml/src/gguf.cpp -o gguf.o
-          $CXX $CXXFLAGS -c ../ggml/src/ggml-cpu/binary-ops.cpp -o ggml-binops.o
-          $CXX $CXXFLAGS -c ../ggml/src/ggml-cpu/unary-ops.cpp -o ggml-unops.o
-          $CXX $CXXFLAGS -c ../ggml/src/ggml-cpu/ops.cpp -o ggml-ops.o
-          $CXX $CXXFLAGS -c ../ggml/src/ggml-cpu/vec.cpp -o ggml-vec.o
+          $CXX $CXXFLAGS -c ggml/src/ggml-backend.cpp -o build_tts/ggml-backend.o
+          $CXX $CXXFLAGS -c ggml/src/ggml-backend-reg.cpp -o build_tts/ggml-backend-reg.o
+          $CXX $CXXFLAGS -c ggml/src/ggml-cpu/traits.cpp -o build_tts/ggml-cpu-traits.o
+          $CXX $CXXFLAGS -c ggml/src/ggml-threading.cpp -o build_tts/ggml-threading.o
+          $CXX $CXXFLAGS -c ggml/src/ggml-cpu/ggml-cpu.cpp -o build_tts/ggml-cpu-cpp.o
+          $CXX $CXXFLAGS -c ggml/src/ggml-cpu/kcpp-repackmapper.cpp -o build_tts/kcpp-repackmapper.o
+          $CXX $CXXFLAGS -c ggml/src/ggml-cpu/llamafile/sgemm.cpp -o build_tts/sgemm.o
+          $CXX $CXXFLAGS -c ggml/src/gguf.cpp -o build_tts/gguf.o
+          $CXX $CXXFLAGS -c ggml/src/ggml-cpu/binary-ops.cpp -o build_tts/ggml-binops.o
+          $CXX $CXXFLAGS -c ggml/src/ggml-cpu/unary-ops.cpp -o build_tts/ggml-unops.o
+          $CXX $CXXFLAGS -c ggml/src/ggml-cpu/ops.cpp -o build_tts/ggml-ops.o
+          $CXX $CXXFLAGS -c ggml/src/ggml-cpu/vec.cpp -o build_tts/ggml-vec.o
           
           echo "Compiling common utilities..."
-          $CXX $CXXFLAGS -c ../src/unicode.cpp -o unicode.o
-          $CXX $CXXFLAGS -c ../src/unicode-data.cpp -o unicode-data.o
-          $CXX $CXXFLAGS -c ../src/llama-impl.cpp -o llama-impl.o
-          $CXX $CXXFLAGS -c ../common/common.cpp -o common.o
-          $CXX $CXXFLAGS -c ../common/sampling.cpp -o sampling.o
-          $CXX $CXXFLAGS -c ../otherarch/utils.cpp -o kcpputils.o
-          $CXX $CXXFLAGS -c ../tools/mtmd/mtmd-audio.cpp -o mtmdaudio.o
+          $CXX $CXXFLAGS -c src/unicode.cpp -o build_tts/unicode.o
+          $CXX $CXXFLAGS -c src/unicode-data.cpp -o build_tts/unicode-data.o
+          $CXX $CXXFLAGS -c src/llama-impl.cpp -o build_tts/llama-impl.o
+          $CXX $CXXFLAGS -c common/common.cpp -o build_tts/common.o
+          $CXX $CXXFLAGS -c common/sampling.cpp -o build_tts/sampling.o
+          $CXX $CXXFLAGS -c otherarch/utils.cpp -o build_tts/kcpputils.o
+          $CXX $CXXFLAGS -c tools/mtmd/mtmd-audio.cpp -o build_tts/mtmdaudio.o
           
           echo "Compiling TTS adapter..."
-          $CXX $CXXFLAGS -c ../otherarch/tts_adapter.cpp -o tts_adapter.o
+          $CXX $CXXFLAGS -c otherarch/tts_adapter.cpp -o build_tts/tts_adapter.o
           
           echo "Creating TTS wrapper..."
-          cat > tts_wrapper.cpp << 'EOFINNER'
-          #include "../../expose.h"
+          cat > build_tts/tts_wrapper.cpp << 'EOFINNER'
+          #include "../expose.h"
+          #include <string>
+          #include <vector>
           #include <cstring>
           
           extern "C" {
@@ -269,15 +270,15 @@ jobs:
           }
           EOFINNER
           
-          $CXX $CXXFLAGS -c tts_wrapper.cpp -o tts_wrapper.o
+          $CXX $CXXFLAGS -c build_tts/tts_wrapper.cpp -o build_tts/tts_wrapper.o
           
           echo "Linking DLL..."
-          $CXX -shared -o libkcpp_tts.dll \
-              ggml.o ggml-alloc.o ggml-quants.o ggml-cpu.o ggml-cpu-quants.o kcpp-quantmapper.o \
-              ggml-backend.o ggml-backend-reg.o ggml-cpu-traits.o ggml-threading.o ggml-cpu-cpp.o \
-              kcpp-repackmapper.o sgemm.o gguf.o ggml-binops.o ggml-unops.o ggml-ops.o ggml-vec.o \
-              unicode.o unicode-data.o llama-impl.o common.o sampling.o kcpputils.o mtmdaudio.o \
-              tts_adapter.o tts_wrapper.o \
+          $CXX -shared -o build_tts/libkcpp_tts.dll \
+              build_tts/ggml.o build_tts/ggml-alloc.o build_tts/ggml-quants.o build_tts/ggml-cpu.o build_tts/ggml-cpu-quants.o build_tts/kcpp-quantmapper.o \
+              build_tts/ggml-backend.o build_tts/ggml-backend-reg.o build_tts/ggml-cpu-traits.o build_tts/ggml-threading.o build_tts/ggml-cpu-cpp.o \
+              build_tts/kcpp-repackmapper.o build_tts/sgemm.o build_tts/gguf.o build_tts/ggml-binops.o build_tts/ggml-unops.o build_tts/ggml-ops.o build_tts/ggml-vec.o \
+              build_tts/unicode.o build_tts/unicode-data.o build_tts/llama-impl.o build_tts/common.o build_tts/sampling.o build_tts/kcpputils.o build_tts/mtmdaudio.o \
+              build_tts/tts_adapter.o build_tts/tts_wrapper.o \
               $LDFLAGS
           
           echo ""
