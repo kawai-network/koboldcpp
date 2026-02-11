@@ -246,6 +246,9 @@ jobs:
           $CXX $CXXFLAGS -c otherarch/utils.cpp -o build_tts/kcpputils.o
           $CXX $CXXFLAGS -c tools/mtmd/mtmd-audio.cpp -o build_tts/mtmdaudio.o
           
+          echo "Compiling llama.cpp..."
+          $CXX $CXXFLAGS -c src/llama.cpp -o build_tts/llama.o
+          
           echo "Compiling TTS adapter..."
           $CXX $CXXFLAGS -c otherarch/tts_adapter.cpp -o build_tts/tts_adapter.o
           
@@ -278,7 +281,7 @@ jobs:
               build_tts/ggml-backend.o build_tts/ggml-backend-reg.o build_tts/ggml-cpu-traits.o build_tts/ggml-threading.o build_tts/ggml-cpu-cpp.o \
               build_tts/kcpp-repackmapper.o build_tts/sgemm.o build_tts/gguf.o build_tts/ggml-binops.o build_tts/ggml-unops.o build_tts/ggml-ops.o build_tts/ggml-vec.o \
               build_tts/unicode.o build_tts/unicode-data.o build_tts/llama-impl.o build_tts/common.o build_tts/sampling.o build_tts/kcpputils.o build_tts/mtmdaudio.o \
-              build_tts/tts_adapter.o build_tts/tts_wrapper.o \
+              build_tts/llama.o build_tts/tts_adapter.o build_tts/tts_wrapper.o \
               $LDFLAGS
           
           echo ""
