@@ -251,10 +251,10 @@ jobs:
           
           echo "Creating TTS wrapper..."
           cat > build_tts/tts_wrapper.cpp << 'EOFINNER'
-          #include "../expose.h"
           #include <string>
           #include <vector>
           #include <cstring>
+          #include "../expose.h"
           
           extern "C" {
               bool ttstype_load_model(const tts_load_model_inputs inputs);
