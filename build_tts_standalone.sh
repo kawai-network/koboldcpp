@@ -13,9 +13,9 @@ CC=${CC:-gcc}
 CXX=${CXX:-g++}
 
 # Build flags
-CFLAGS="-I. -Iggml/include -Iggml/src -Iggml/src/ggml-cpu -Iinclude -Isrc -I./common -I./vendor -I./vendor/stb -I./include -I./otherarch -I./otherarch/tools -I./otherarch/ttscpp/include -I./otherarch/ttscpp/src -O3 -fno-finite-math-only -std=c11 -fPIC -DLOG_DISABLE_LOGS -D_GNU_SOURCE -DGGML_USE_CPU -DGGML_USE_CPU_REPACK -pthread"
+CFLAGS="-I. -I./ggml/include -I./ggml/src -I./ggml/src/ggml-cpu -I./include -I./src -I./common -I./vendor -I./vendor/stb -I./otherarch -I./otherarch/tools -I./otherarch/ttscpp/include -I./otherarch/ttscpp/src -O3 -fno-finite-math-only -std=c11 -fPIC -DLOG_DISABLE_LOGS -D_GNU_SOURCE -DGGML_USE_CPU -DGGML_USE_CPU_REPACK -pthread"
 
-CXXFLAGS="-I. -Iggml/include -Iggml/src -Iggml/src/ggml-cpu -Iinclude -Isrc -I./common -I./vendor -I./vendor/stb -I./include -I./otherarch -I./otherarch/tools -I./otherarch/ttscpp/include -I./otherarch/ttscpp/src -O3 -fno-finite-math-only -std=c++17 -fPIC -DLOG_DISABLE_LOGS -D_GNU_SOURCE -DGGML_USE_CPU -DGGML_USE_CPU_REPACK -pthread -Wno-multichar -Wno-write-strings -Wno-deprecated -Wno-deprecated-declarations -Wno-unused-variable"
+CXXFLAGS="-I. -I./ggml/include -I./ggml/src -I./ggml/src/ggml-cpu -I./include -I./src -I./common -I./vendor -I./vendor/stb -I./otherarch -I./otherarch/tools -I./otherarch/ttscpp/include -I./otherarch/ttscpp/src -O3 -fno-finite-math-only -std=c++17 -fPIC -DLOG_DISABLE_LOGS -D_GNU_SOURCE -DGGML_USE_CPU -DGGML_USE_CPU_REPACK -pthread -Wno-multichar -Wno-write-strings -Wno-deprecated -Wno-deprecated-declarations -Wno-unused-variable"
 
 LDFLAGS="-pthread -lm"
 
