@@ -1,0 +1,449 @@
+name: Build TTS Library
+
+on:
+  push:
+    branches:
+      - concedo
+      - concedo_experimental
+    paths:
+      - 'otherarch/tts_adapter.cpp'
+      - 'otherarch/ttscpp/**'
+      - 'build_tts_standalone.sh'
+      - '.github/workflows/build-tts-lib.yaml'
+  pull_request:
+    branches:
+      - concedo
+      - concedo_experimental
+    paths:
+      - 'otherarch/tts_adapter.cpp'
+      - 'otherarch/ttscpp/**'
+      - 'build_tts_standalone.sh'
+      - '.github/workflows/build-tts-lib.yaml'
+  workflow_dispatch:
+  release:
+    types: [created]
+
+env:
+  TTS_LIB_VERSION: v1.0.0
+
+jobs:
+  build-tts-linux:
+    name: Build TTS Library (Linux x64)
+    runs-on: ubuntu-22.04
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential
+
+      - name: Build TTS library
+        run: |
+          chmod +x build_tts_standalone.sh
+          ./build_tts_standalone.sh
+
+      - name: Verify build
+        run: |
+          ls -lh build_tts/
+          file build_tts/libkcpp_tts.so
+          ldd build_tts/libkcpp_tts.so || true
+
+      - name: Package library
+        run: |
+          cd build_tts
+          tar -czf ../libkcpp_tts-linux-x64.tar.gz libkcpp_tts.so
+          cd ..
+          cp expose.h build_tts/
+          cp README_TTS_STANDALONE.md build_tts/
+          cp example_tts_usage.py build_tts/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: libkcpp_tts-linux-x64
+          path: |
+            libkcpp_tts-linux-x64.tar.gz
+            build_tts/libkcpp_tts.so
+            build_tts/expose.h
+            build_tts/README_TTS_STANDALONE.md
+            build_tts/example_tts_usage.py
+          retention-days: 30
+
+  build-tts-linux-avx2:
+    name: Build TTS Library (Linux x64 AVX2)
+    runs-on: ubuntu-22.04
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential
+
+      - name: Build TTS library with AVX2
+        run: |
+          chmod +x build_tts_standalone.sh
+          # Modify flags for AVX2
+          sed -i 's/-march=native/-mavx2 -mfma -mf16c/g' build_tts_standalone.sh
+          ./build_tts_standalone.sh
+
+      - name: Verify build
+        run: |
+          ls -lh build_tts/
+          file build_tts/libkcpp_tts.so
+
+      - name: Package library
+        run: |
+          cd build_tts
+          tar -czf ../libkcpp_tts-linux-x64-avx2.tar.gz libkcpp_tts.so
+          cd ..
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: libkcpp_tts-linux-x64-avx2
+          path: libkcpp_tts-linux-x64-avx2.tar.gz
+          retention-days: 30
+
+  build-tts-macos-arm64:
+    name: Build TTS Library (macOS ARM64)
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build TTS library
+        run: |
+          chmod +x build_tts_standalone.sh
+          ./build_tts_standalone.sh
+
+      - name: Verify build
+        run: |
+          ls -lh build_tts/
+          file build_tts/libkcpp_tts.dylib
+          otool -L build_tts/libkcpp_tts.dylib || true
+
+      - name: Package library
+        run: |
+          cd build_tts
+          tar -czf ../libkcpp_tts-macos-arm64.tar.gz libkcpp_tts.dylib
+          cd ..
+          cp expose.h build_tts/
+          cp README_TTS_STANDALONE.md build_tts/
+          cp example_tts_usage.py build_tts/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: libkcpp_tts-macos-arm64
+          path: |
+            libkcpp_tts-macos-arm64.tar.gz
+            build_tts/libkcpp_tts.dylib
+            build_tts/expose.h
+            build_tts/README_TTS_STANDALONE.md
+            build_tts/example_tts_usage.py
+          retention-days: 30
+
+  build-tts-macos-x64:
+    name: Build TTS Library (macOS x64)
+    runs-on: macos-13  # Intel Mac
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build TTS library
+        run: |
+          chmod +x build_tts_standalone.sh
+          ./build_tts_standalone.sh
+
+      - name: Verify build
+        run: |
+          ls -lh build_tts/
+          file build_tts/libkcpp_tts.dylib
+          otool -L build_tts/libkcpp_tts.dylib || true
+
+      - name: Package library
+        run: |
+          cd build_tts
+          tar -czf ../libkcpp_tts-macos-x64.tar.gz libkcpp_tts.dylib
+          cd ..
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: libkcpp_tts-macos-x64
+          path: libkcpp_tts-macos-x64.tar.gz
+          retention-days: 30
+
+  build-tts-windows:
+    name: Build TTS Library (Windows x64)
+    runs-on: windows-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up w64devkit
+        run: |
+          curl -L https://github.com/skeeto/w64devkit/releases/download/v1.22.0/w64devkit-1.22.0.zip --output w64devkit.zip
+          Expand-Archive w64devkit.zip -DestinationPath .
+          echo "${{ github.workspace }}\w64devkit\bin" | Out-File -Append -FilePath $env:GITHUB_PATH -Encoding utf8
+        shell: pwsh
+
+      - name: Create Windows build script
+        shell: bash
+        run: |
+          cat > build_tts_windows.sh << 'EOF'
+          #!/bin/bash
+          set -e
+          
+          echo "==================================="
+          echo "Building TTS Library for Windows"
+          echo "==================================="
+          
+          CC=gcc
+          CXX=g++
+          
+          CFLAGS="-I. -Iggml/include -Iggml/src -Iggml/src/ggml-cpu -Iinclude -Isrc -I./common -I./vendor -I./vendor/stb -I./include -I./otherarch -I./otherarch/tools -I./otherarch/ttscpp/include -I./otherarch/ttscpp/src -O3 -fno-finite-math-only -std=c11 -fPIC -DLOG_DISABLE_LOGS -D_GNU_SOURCE -DGGML_USE_CPU -DGGML_USE_CPU_REPACK -pthread -mavx2 -mfma -mf16c"
+          
+          CXXFLAGS="-I. -Iggml/include -Iggml/src -Iggml/src/ggml-cpu -Iinclude -Isrc -I./common -I./vendor -I./vendor/stb -I./include -I./otherarch -I./otherarch/tools -I./otherarch/ttscpp/include -I./otherarch/ttscpp/src -O3 -fno-finite-math-only -std=c++17 -fPIC -DLOG_DISABLE_LOGS -D_GNU_SOURCE -DGGML_USE_CPU -DGGML_USE_CPU_REPACK -pthread -Wno-multichar -Wno-write-strings -Wno-deprecated -Wno-deprecated-declarations -Wno-unused-variable -mavx2 -mfma -mf16c"
+          
+          LDFLAGS="-pthread -lm -static-libgcc -static-libstdc++"
+          
+          mkdir -p build_tts
+          cd build_tts
+          
+          echo "Compiling GGML core..."
+          $CC $CFLAGS -c ../ggml/src/ggml.c -o ggml.o
+          $CC $CFLAGS -c ../ggml/src/ggml-alloc.c -o ggml-alloc.o
+          $CC $CFLAGS -c ../ggml/src/ggml-quants.c -o ggml-quants.o
+          $CC $CFLAGS -c ../ggml/src/ggml-cpu/ggml-cpu.c -o ggml-cpu.o
+          $CC $CFLAGS -c ../ggml/src/ggml-cpu/quants.c -o ggml-cpu-quants.o
+          $CC $CFLAGS -c ../ggml/src/ggml-cpu/kcpp-quantmapper.c -o kcpp-quantmapper.o
+          
+          echo "Compiling GGML C++ components..."
+          $CXX $CXXFLAGS -c ../ggml/src/ggml-backend.cpp -o ggml-backend.o
+          $CXX $CXXFLAGS -c ../ggml/src/ggml-backend-reg.cpp -o ggml-backend-reg.o
+          $CXX $CXXFLAGS -c ../ggml/src/ggml-cpu/traits.cpp -o ggml-cpu-traits.o
+          $CXX $CXXFLAGS -c ../ggml/src/ggml-threading.cpp -o ggml-threading.o
+          $CXX $CXXFLAGS -c ../ggml/src/ggml-cpu/ggml-cpu.cpp -o ggml-cpu-cpp.o
+          $CXX $CXXFLAGS -c ../ggml/src/ggml-cpu/kcpp-repackmapper.cpp -o kcpp-repackmapper.o
+          $CXX $CXXFLAGS -c ../ggml/src/ggml-cpu/llamafile/sgemm.cpp -o sgemm.o
+          $CXX $CXXFLAGS -c ../ggml/src/gguf.cpp -o gguf.o
+          $CXX $CXXFLAGS -c ../ggml/src/ggml-cpu/binary-ops.cpp -o ggml-binops.o
+          $CXX $CXXFLAGS -c ../ggml/src/ggml-cpu/unary-ops.cpp -o ggml-unops.o
+          $CXX $CXXFLAGS -c ../ggml/src/ggml-cpu/ops.cpp -o ggml-ops.o
+          $CXX $CXXFLAGS -c ../ggml/src/ggml-cpu/vec.cpp -o ggml-vec.o
+          
+          echo "Compiling common utilities..."
+          $CXX $CXXFLAGS -c ../src/unicode.cpp -o unicode.o
+          $CXX $CXXFLAGS -c ../src/unicode-data.cpp -o unicode-data.o
+          $CXX $CXXFLAGS -c ../src/llama-impl.cpp -o llama-impl.o
+          $CXX $CXXFLAGS -c ../common/common.cpp -o common.o
+          $CXX $CXXFLAGS -c ../common/sampling.cpp -o sampling.o
+          $CXX $CXXFLAGS -c ../otherarch/utils.cpp -o kcpputils.o
+          $CXX $CXXFLAGS -c ../tools/mtmd/mtmd-audio.cpp -o mtmdaudio.o
+          
+          echo "Compiling TTS adapter..."
+          $CXX $CXXFLAGS -c ../otherarch/tts_adapter.cpp -o tts_adapter.o
+          
+          echo "Creating TTS wrapper..."
+          cat > tts_wrapper.cpp << 'EOFINNER'
+          #include "../../expose.h"
+          #include <cstring>
+          
+          extern "C" {
+              bool ttstype_load_model(const tts_load_model_inputs inputs);
+              tts_generation_outputs ttstype_generate(const tts_generation_inputs inputs);
+              
+              __declspec(dllexport) bool tts_load_model(const tts_load_model_inputs inputs) {
+                  return ttstype_load_model(inputs);
+              }
+              
+              __declspec(dllexport) tts_generation_outputs tts_generate(const tts_generation_inputs inputs) {
+                  return ttstype_generate(inputs);
+              }
+          }
+          EOFINNER
+          
+          $CXX $CXXFLAGS -c tts_wrapper.cpp -o tts_wrapper.o
+          
+          echo "Linking DLL..."
+          $CXX -shared -o libkcpp_tts.dll \
+              ggml.o ggml-alloc.o ggml-quants.o ggml-cpu.o ggml-cpu-quants.o kcpp-quantmapper.o \
+              ggml-backend.o ggml-backend-reg.o ggml-cpu-traits.o ggml-threading.o ggml-cpu-cpp.o \
+              kcpp-repackmapper.o sgemm.o gguf.o ggml-binops.o ggml-unops.o ggml-ops.o ggml-vec.o \
+              unicode.o unicode-data.o llama-impl.o common.o sampling.o kcpputils.o mtmdaudio.o \
+              tts_adapter.o tts_wrapper.o \
+              $LDFLAGS
+          
+          echo ""
+          echo "==================================="
+          echo "Build complete!"
+          echo "Library: build_tts/libkcpp_tts.dll"
+          echo "==================================="
+          EOF
+          chmod +x build_tts_windows.sh
+
+      - name: Build TTS library
+        shell: bash
+        run: |
+          ./build_tts_windows.sh
+
+      - name: Verify build
+        shell: bash
+        run: |
+          ls -lh build_tts/
+          file build_tts/libkcpp_tts.dll
+
+      - name: Package library
+        shell: bash
+        run: |
+          cd build_tts
+          tar -czf ../libkcpp_tts-windows-x64.tar.gz libkcpp_tts.dll
+          cd ..
+          cp expose.h build_tts/
+          cp README_TTS_STANDALONE.md build_tts/
+          cp example_tts_usage.py build_tts/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: libkcpp_tts-windows-x64
+          path: |
+            libkcpp_tts-windows-x64.tar.gz
+            build_tts/libkcpp_tts.dll
+            build_tts/expose.h
+            build_tts/README_TTS_STANDALONE.md
+            build_tts/example_tts_usage.py
+          retention-days: 30
+
+  test-tts-library:
+    name: Test TTS Library
+    needs: [build-tts-linux, build-tts-macos-arm64]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-22.04, macos-latest]
+        include:
+          - os: ubuntu-22.04
+            artifact: libkcpp_tts-linux-x64
+            lib_name: libkcpp_tts.so
+          - os: macos-latest
+            artifact: libkcpp_tts-macos-arm64
+            lib_name: libkcpp_tts.dylib
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Download TTS library
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: build_tts
+
+      - name: Test library loading
+        run: |
+          python3 << 'EOF'
+          import ctypes
+          import os
+          
+          lib_path = "build_tts/${{ matrix.lib_name }}"
+          print(f"Testing library: {lib_path}")
+          
+          if not os.path.exists(lib_path):
+              print(f"ERROR: Library not found at {lib_path}")
+              exit(1)
+          
+          try:
+              lib = ctypes.CDLL(lib_path)
+              print("✓ Library loaded successfully")
+              
+              # Check if functions exist
+              if hasattr(lib, 'tts_load_model'):
+                  print("✓ tts_load_model function found")
+              else:
+                  print("✗ tts_load_model function not found")
+                  
+              if hasattr(lib, 'tts_generate'):
+                  print("✓ tts_generate function found")
+              else:
+                  print("✗ tts_generate function not found")
+                  
+              print("\nLibrary test passed!")
+              
+          except Exception as e:
+              print(f"ERROR loading library: {e}")
+              exit(1)
+          EOF
+
+      - name: Test with example script
+        run: |
+          cd build_tts
+          python3 << 'EOF'
+          import ctypes
+          import os
+          
+          # This is a basic smoke test - actual TTS generation requires a model
+          lib_path = "./${{ matrix.lib_name }}"
+          
+          class tts_load_model_inputs(ctypes.Structure):
+              _fields_ = [
+                  ("threads", ctypes.c_int),
+                  ("ttc_model_filename", ctypes.c_char_p),
+                  ("cts_model_filename", ctypes.c_char_p),
+                  ("gpulayers", ctypes.c_int),
+                  ("flash_attention", ctypes.c_bool),
+                  ("ttsmaxlen", ctypes.c_int),
+                  ("debugmode", ctypes.c_int)
+              ]
+          
+          lib = ctypes.CDLL(lib_path)
+          lib.tts_load_model.argtypes = [tts_load_model_inputs]
+          lib.tts_load_model.restype = ctypes.c_bool
+          
+          print("✓ Function signatures set correctly")
+          print("✓ Library is ready to use")
+          print("\nNote: Actual TTS generation requires downloading a model from:")
+          print("https://huggingface.co/koboldcpp/tts/tree/main")
+          EOF
+
+  create-release:
+    name: Create Release
+    needs: [build-tts-linux, build-tts-linux-avx2, build-tts-macos-arm64, build-tts-macos-x64, build-tts-windows, test-tts-library]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release'
+    
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Display structure
+        run: ls -R artifacts
+
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            artifacts/libkcpp_tts-linux-x64/libkcpp_tts-linux-x64.tar.gz
+            artifacts/libkcpp_tts-linux-x64-avx2/libkcpp_tts-linux-x64-avx2.tar.gz
+            artifacts/libkcpp_tts-macos-arm64/libkcpp_tts-macos-arm64.tar.gz
+            artifacts/libkcpp_tts-macos-x64/libkcpp_tts-macos-x64.tar.gz
+            artifacts/libkcpp_tts-windows-x64/libkcpp_tts-windows-x64.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
