@@ -15,7 +15,8 @@ struct llama_logger_state {
     void * log_callback_user_data = nullptr;
 };
 
-static llama_logger_state g_logger_state;
+// Use extern to allow access from other files (needed for TTS standalone build)
+llama_logger_state g_logger_state;
 
 time_meas::time_meas(int64_t & t_acc, bool disable) : t_start_us(disable ? -1 : ggml_time_us()), t_acc(t_acc) {}
 
