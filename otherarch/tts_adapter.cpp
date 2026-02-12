@@ -1261,3 +1261,14 @@ tts_generation_outputs ttstype_generate(const tts_generation_inputs inputs)
         return ttstype_generate_outetts(inputs);
     }
 }
+
+// Export functions with C linkage for standalone library
+extern "C" {
+    bool ttstype_load_model_c(const tts_load_model_inputs inputs) {
+        return ttstype_load_model(inputs);
+    }
+    
+    tts_generation_outputs ttstype_generate_c(const tts_generation_inputs inputs) {
+        return ttstype_generate(inputs);
+    }
+}

@@ -52,6 +52,7 @@ $CXX $CXXFLAGS -c ggml/src/ggml-cpu/traits.cpp -o build_tts/ggml-cpu-traits.o
 $CXX $CXXFLAGS -c ggml/src/ggml-threading.cpp -o build_tts/ggml-threading.o
 $CXX $CXXFLAGS -c ggml/src/ggml-cpu/ggml-cpu.cpp -o build_tts/ggml-cpu-cpp.o
 $CXX $CXXFLAGS -c ggml/src/ggml-cpu/kcpp-repackmapper.cpp -o build_tts/kcpp-repackmapper.o
+$CXX $CXXFLAGS -c ggml/src/ggml-cpu/repack.cpp -o build_tts/ggml-repack.o
 $CXX $CXXFLAGS -c ggml/src/ggml-cpu/llamafile/sgemm.cpp -o build_tts/sgemm.o
 $CXX $CXXFLAGS -c ggml/src/gguf.cpp -o build_tts/gguf.o
 $CXX $CXXFLAGS -c ggml/src/ggml-cpu/binary-ops.cpp -o build_tts/ggml-binops.o
@@ -92,16 +93,16 @@ cat > build_tts/tts_wrapper.cpp << 'EOF'
 
 extern "C" {
     // Forward declarations from tts_adapter
-    bool ttstype_load_model(const tts_load_model_inputs inputs);
-    tts_generation_outputs ttstype_generate(const tts_generation_inputs inputs);
+    bool ttstype_load_model_c(const tts_load_model_inputs inputs);
+    tts_generation_outputs ttstype_generate_c(const tts_generation_inputs inputs);
     
     // Exported functions
     bool tts_load_model(const tts_load_model_inputs inputs) {
-        return ttstype_load_model(inputs);
+        return ttstype_load_model_c(inputs);
     }
     
     tts_generation_outputs tts_generate(const tts_generation_inputs inputs) {
-        return ttstype_generate(inputs);
+        return ttstype_generate_c(inputs);
     }
 }
 EOF
@@ -114,7 +115,7 @@ echo "Linking shared library..."
 $CXX -shared -o build_tts/libkcpp_tts.$LIB_EXT \
     build_tts/ggml.o build_tts/ggml-alloc.o build_tts/ggml-quants.o build_tts/ggml-cpu.o build_tts/ggml-cpu-quants.o build_tts/kcpp-quantmapper.o \
     build_tts/ggml-backend.o build_tts/ggml-backend-reg.o build_tts/ggml-cpu-traits.o build_tts/ggml-threading.o build_tts/ggml-cpu-cpp.o \
-    build_tts/kcpp-repackmapper.o build_tts/sgemm.o build_tts/gguf.o build_tts/ggml-binops.o build_tts/ggml-unops.o build_tts/ggml-ops.o build_tts/ggml-vec.o \
+    build_tts/kcpp-repackmapper.o build_tts/ggml-repack.o build_tts/sgemm.o build_tts/gguf.o build_tts/ggml-binops.o build_tts/ggml-unops.o build_tts/ggml-ops.o build_tts/ggml-vec.o \
     build_tts/unicode.o build_tts/unicode-data.o build_tts/llama-impl.o build_tts/common.o build_tts/sampling.o build_tts/kcpputils.o build_tts/mtmdaudio.o \
     build_tts/model_adapter.o build_tts/llama.o build_tts/tts_adapter.o build_tts/tts_wrapper.o \
     $LDFLAGS
