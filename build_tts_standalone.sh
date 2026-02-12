@@ -132,5 +132,4 @@ echo "2. Include expose.h for struct definitions"
 echo "3. Link with -lkcpp_tts"
 echo ""
 
-# Test trigger for GitHub Actions
-# This line added to trigger workflow
+# Trigger workflow update
